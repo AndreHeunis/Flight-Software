@@ -1,0 +1,612 @@
+/*
+ * comms.c
+ *
+ *  Created on: 30 Jul 2013
+ *      Author: pjbotma
+ */
+
+#include "comms.h" 	// received with only this include
+
+// #define COMMS_TCMDERR_OVERFLOW 	1		// Used in testing with HIL software
+// #define COMMS_TCMDERR_ID 		2
+
+extern xSemaphoreHandle printingMutex;
+
+enum commsState{
+	waitForId,
+	waitForData
+} uartState, i2cState;
+
+typedef struct{
+	uint8_t id;
+	uint8_t len;
+	uint8_t error;
+	uint8_t processed;
+	uint8_t params[COMMS_TCMD_PARAMLEN];
+} COMMS_TCMD_TypeDef;
+
+COMMS_TCMD_TypeDef tcmdBuffer[COMMS_TCMD_BUFFLEN];
+
+uint8_t tcmdReadIndex;
+uint8_t tcmdWriteIndex;
+uint8_t tcmdBuffFull;
+
+uint16_t tcmdCount;
+uint16_t tlmCount;
+
+//uint16_t commsErr;
+
+uint8_t uartRxIndex;
+uint8_t uartTxIndex;
+uint8_t uartTxBuffer[64];
+
+uint8_t i2cRxIndex;
+uint8_t i2cTxIndex;
+uint8_t i2cTxBuffer[64];
+
+uint8_t debugStr[64], debugLen;
+
+// FreeRTOS queue in which to queue up subsystem commands
+extern xQueueHandle FSW_CDH_CMDqueue;
+
+void addToBuffer_uint8 (uint8_t *buffer, uint8_t data)
+{
+	*(buffer) = data;
+}
+
+
+void addToBuffer_uint16 (uint8_t *buffer, uint16_t data)
+{
+	uint8_t *tmp = (uint8_t*)(&data);
+
+	*(buffer  ) = *(tmp  );
+	*(buffer+1) = *(tmp+1);
+}
+
+
+void addToBuffer_int16 (uint8_t *buffer, int16_t data)
+{
+	uint8_t *tmp = (uint8_t*)(&data);
+
+	*(buffer  ) = *(tmp  );
+	*(buffer+1) = *(tmp+1);
+}
+
+
+void addToBuffer_uint32 (uint8_t *buffer, uint32_t data)
+{
+	uint8_t *tmp = (uint8_t*)(&data);
+
+	*(buffer  ) = *(tmp  );
+	*(buffer+1) = *(tmp+1);
+	*(buffer+2) = *(tmp+2);
+	*(buffer+3) = *(tmp+3);
+}
+
+
+void COMMS_init(void)
+{
+	int i;
+
+	BSP_UART_Init(BSP_UART_DEBUG);
+	BSP_I2C_Init(BSP_I2C_SYS, false);
+
+	for(i = 0; i < COMMS_TCMD_BUFFLEN; i++)
+	{
+		tcmdBuffer[i].error = 0;
+		tcmdBuffer[i].processed = 1;
+	}
+
+	tcmdReadIndex  = 0;
+	tcmdWriteIndex = 0;
+	tcmdBuffFull   = 0;
+
+	tcmdCount = 0;
+	tlmCount  = 0;
+
+	commsErr  = 0x00;
+
+	uartRxIndex = 0;
+	uartTxIndex = 0;
+
+	i2cRxIndex = 0;
+	i2cTxIndex = 0;
+
+	debugLen = 0;
+}
+
+#ifndef HIL_sim
+
+uint8_t identifyTCMD (uint8_t id)
+{
+	uint8_t tcmdLen;
+	/*
+	if(tcmdError)												// ADDED FROM HIL CODE FOR SIMULATION PURPOSES ONLY
+	{
+		// ignore tcmd until error cleared (see tlm: 0x81)
+		//return;
+	}
+
+	if(!tcmdProcessed)											// ADDED FROM HIL CODE FOR SIMULATION PURPOSES ONLY
+	{
+		//tcmdError = COMMS_TCMDERR_OVERFLOW;
+		//return;
+	}
+	 */
+
+	switch(id)
+	{
+
+	case 0x01:													// EDITED FROM HIL CODE FOR SIMULATION PURPOSES ONLY
+		tcmdBuffer[tcmdWriteIndex].id = id;
+		tcmdLen = 0;
+		tcmdBuffer[tcmdWriteIndex].processed = 0;
+		break;
+	case 't':
+		tcmdLen = 0;
+		break;
+
+	case 0x2:
+		tcmdLen = 1;
+		break;
+	case 0x11: 	// set attitude estimation mode					// ADDED FROM HIL CODE FOR SIMULATION PURPOSES ONLY
+		tcmdLen = 1;
+		break;
+	case 0x12:	// send sysHealth command
+		tcmdLen = 0;
+		break;
+	case 0x13: 	// set OBC time and date
+		tcmdLen = 0;
+		break;
+		//default:												// ADDED FROM HIL CODE FOR SIMULATION PURPOSES ONLY
+		// flag tcmd error										// ..
+		//tcmdId = id;											// ..
+		//tcmdError = COMMS_TCMDERR_ID;							// ..
+		//return; // !Note we exit function						// ADDED FROM HIL CODE FOR SIMULATION PURPOSES ONLY
+
+	default:
+		tcmdLen = 0;
+		//tcmdBuffer[tcmdWriteIndex].len = 0;
+		break;
+	}
+
+	/*
+			tcmdId = id;													// ADDED FROM HIL CODE FOR SIMULATION PURPOSES ONLY
+			commsUart = waitForData;										// ADDED FROM HIL CODE FOR SIMULATION PURPOSES ONLY
+			uartRxIndex = 0;												// ADDED FROM HIL CODE FOR SIMULATION PURPOSES ONLY
+	 */
+
+	return tcmdLen;
+}
+
+
+void COMMS_processTCMD(void)
+{
+	portBASE_TYPE sendStatus;
+
+	//if(tcmdProcessed)															// ADDED FROM HIL CODE FOR SIMULATION PURPOSES ONLY
+	//if( tcmdBuffer[tcmdReadIndex].processed )									// Enabling this locks up matlab
+	//return; // no need to proceed, no tcmd to process
+
+	//if(tcmdError)																// ADDED FROM HIL CODE FOR SIMULATION PURPOSES ONLY
+	if( tcmdBuffer[tcmdReadIndex].error )
+		return; // wait for "TCM ack" telemetry msg (0x82) to clear error flag
+
+	// loop through TCMD buffer until all TCMDs have been processed
+	while( !( tcmdBuffer[(tcmdReadIndex + 1) % COMMS_TCMD_BUFFLEN].processed ) )
+	{
+		tcmdReadIndex = (tcmdReadIndex + 1) % COMMS_TCMD_BUFFLEN;
+
+		// process errors
+		if(tcmdBuffer[tcmdReadIndex].error)
+		{
+			debugLen = sprintf((char*)debugStr,"\nERROR: %d\n", tcmdBuffer[tcmdReadIndex].error);
+			BSP_UART_txBuffer(BSP_UART_DEBUG,(uint8_t*)debugStr,debugLen, true);
+
+			tcmdBuffer[tcmdReadIndex].error = 0;
+		}
+		// process telecommands
+		else
+		{
+			switch(tcmdBuffer[tcmdReadIndex].id)
+			{
+			case 't':													// Print out RTC value
+				TEST_RTC();
+				break;
+
+			case 'm':													// Test microSD card
+				TEST_microSD();
+				break;
+
+			case 'c':													// Generate a CMD log
+				log_entry.type = LOG_CMD;
+				log_entry.exe_time = OBC_time;
+				log_entry.source = FSW_COMM;
+				log_entry.id = 0x01;
+
+				xQueueSendToBack( FSW_FS_LOGqueue, &log_entry, 0 );
+				break;
+
+			case 'w':													// Generate a WOD log
+				log_entry.type = LOG_WOD;
+				log_entry.exe_time = OBC_time;
+				log_entry.source = FSW_COMM;
+				log_entry.id = 0x02;
+
+				xQueueSendToBack( FSW_FS_LOGqueue, &log_entry, 0 );
+				break;
+
+			case 'e':													// Generate a error log
+				log_entry.type = LOG_ERROR;
+				log_entry.exe_time = OBC_time;
+				log_entry.source = FSW_COMM;
+				log_entry.id = 0x03;
+
+				xQueueSendToBack( FSW_FS_LOGqueue, &log_entry, 0 );
+				break;
+
+			case 'r':													// Reset MCU
+				SCB->AIRCR = 0x05FA0004;
+				break;
+
+			case 'a':													// Print a test string to the terminal
+				printString( "Terminal test successful\n" );
+				break;
+
+			default:
+				//debugLen = sprintf((char*)debugStr,"\nERROR: Unknown telecommand ID!\n");
+				//BSP_UART_txBuffer(BSP_UART_DEBUG,(uint8_t*)debugStr,debugLen, true);
+				while(1);
+				break;
+			}
+			tcmdCount++;
+		}
+
+		tcmdBuffer[tcmdReadIndex].processed = 1;
+		//sendStatus = NULL;
+	}
+}
+
+
+uint8_t processTLM(uint8_t id, uint8_t *txBuffer)
+{
+	uint8_t tlmLen;
+
+	switch(id)
+	{
+	case 0x80: // status
+
+		addToBuffer_uint32(&(txBuffer[0]),sec);
+		addToBuffer_uint8 (&(txBuffer[4]),(uint8_t)FIRMWARE_MAJOR);
+		addToBuffer_uint8 (&(txBuffer[5]),(uint8_t)FIRMWARE_MINOR);
+		tlmLen = 6;
+
+		break;
+
+	case 0x81: // communication status
+
+		addToBuffer_uint16(&(txBuffer[0]), tcmdCount);
+		addToBuffer_uint16(&(txBuffer[2]), tlmCount);
+		addToBuffer_uint16(&(txBuffer[4]), commsErr);
+		tlmLen = 6;
+
+		// clear error flags
+		commsErr = 0x00;
+
+		break;
+
+	case 0x82: // telecommand acknowledge. ADDED FROM HIL CODE FOR SIMULATION PURPOSES ONLY
+
+		//addToBuffer_uint8(&(uartTxBuffer[0]), tcmdId);
+		addToBuffer_uint8(&(uartTxBuffer[0]), tcmdBuffer[tcmdWriteIndex].id);
+		//addToBuffer_uint8(&(uartTxBuffer[1]), tcmdProcessed);
+		addToBuffer_uint8(&(uartTxBuffer[1]), tcmdBuffer[tcmdWriteIndex].processed);
+		//addToBuffer_uint8(&(uartTxBuffer[2]), tcmdError);
+		addToBuffer_uint8(&(uartTxBuffer[2]), tcmdBuffer[tcmdWriteIndex].error);
+
+		// clear error flags
+		tcmdBuffer[tcmdWriteIndex].error = 0;
+		//tcmdError = 0;
+
+		//BSP_UART_txBuffer (BSP_UART_DEBUG, uartTxBuffer, 3, true);
+		tlmLen = 3;
+
+		break;
+
+	case 0x83: // current time
+
+		addToBuffer_uint32(&(txBuffer[0]),sec);
+		addToBuffer_uint16(&(txBuffer[4]),msec);
+		tlmLen = 6;
+
+		break;
+
+	case 0x92:	// Report OBC time and date
+		addToBuffer_uint32 ( uartTxBuffer, (uint32_t)getOBC_time() );
+		tlmLen = 4;
+		break;
+
+	default:
+		// error: unknown telemetry id
+		break;
+	}
+
+	tlmCount++;
+
+	return tlmLen;
+}
+
+/**
+ * UART interrupt handler
+ * This handler executes when data is received on the UART. The UART state (initially waitForId) is used to determine what action to take
+ * waitForId
+ * In this state, the received ID is evaluated to see if a TCMD or TLM request was received. If a TLM request was received, it is
+ * processed in the handler by processTLM. processTLM puts the requested TLM on the buffer for transmission. The buffer is then
+ * transmitted if no data is currently being transmitted. If a TCMD was received and there isn't a backlog of TCMDs waiting to be
+ * processed, the ID and length of the TCMD are added to the buffer. If the length is bigger than 0, the state is switched to waitForData
+ * (in order to receive the data in the TCMD), otherwise the TCMD is flagged for processing.
+ * waitForData
+ * Whenever data appears on the UART, it is stored in the TCMD buffer's parameter array. When the same amount of data as the length of the
+ * TCMD has been received, the TCMD is flagged for processing and the mode is set to waitForId
+ */
+
+void BSP_UART_DEBUG_IRQHandler(void)
+{
+	uint32_t status;
+	uint8_t  tempId, tempLen, tempData;
+
+	// disable interrupt
+	BSP_UART_DEBUG->IEN &= ~USART_IEN_RXDATAV;
+
+	status = BSP_UART_DEBUG->IF;
+
+	switch(uartState)
+	{
+	case waitForId:
+
+		tempId = BSP_UART_DEBUG->RXDATA;
+
+		// Telemetry ID
+		if( (tempId & COMMS_ID_TYPE) == COMMS_ID_TLM)
+		{
+			tempLen = processTLM (tempId, uartTxBuffer);
+
+			if( BSP_UART_txInProgress() )
+			{
+				commsErr = COMMS_ERROR_UARTTLM;
+			}
+			else
+			{
+				BSP_UART_txBuffer(BSP_UART_DEBUG, uartTxBuffer, tempLen, false);
+			}
+		}
+		// Telecommand ID
+		else
+		{
+			// check for tcmd buffer overflow
+			if(tcmdBuffer[(tcmdWriteIndex + 1) % COMMS_TCMD_BUFFLEN].processed == 0)
+			{
+				tcmdBuffFull = 1;
+				commsErr = COMMS_ERROR_TCMDBUFOF;
+			}
+			// add data to new tcmd parameter storage
+			else
+			{
+				tcmdWriteIndex = (tcmdWriteIndex + 1) % COMMS_TCMD_BUFFLEN;
+				tcmdBuffFull = 0;
+
+				tcmdBuffer[tcmdWriteIndex].id  = tempId;
+				tcmdBuffer[tcmdWriteIndex].len = identifyTCMD (tempId);
+
+				// if tcmd has length, switch uart state, else flag for processing
+				if(tcmdBuffer[tcmdWriteIndex].len > 0)
+				{
+					uartRxIndex = 0;
+					uartState = waitForData;
+				}
+				else
+				{
+					tcmdBuffer[tcmdWriteIndex].processed = 0;
+				}
+			}
+		}
+		break;
+
+	case waitForData:
+
+		if(!tcmdBuffFull)
+		{
+			tcmdBuffer[tcmdWriteIndex].params[uartRxIndex++] = BSP_UART_DEBUG->RXDATA;
+
+			if(uartRxIndex == tcmdBuffer[tcmdWriteIndex].len)
+			{
+				tcmdBuffer[tcmdWriteIndex].processed = 0;
+				uartState = waitForId;
+			}
+		}
+		else
+		{
+			// read data to clear interrupt
+			tempData = BSP_UART_DEBUG->RXDATA;
+		}
+		break;
+
+	default:
+		break;
+	}
+
+	// enable interrupt
+	BSP_UART_DEBUG->IEN |= USART_IEN_RXDATAV;
+}
+
+
+/**
+ * I2C interrupt handler
+ */
+
+void I2C0_IRQHandler(void)
+{
+	int status;
+	uint8_t tempAddr, tempId, tempData;
+
+	status = BSP_I2C_SYS->IF;
+
+	switch(i2cState)
+	{
+	case waitForId:
+
+		if (status & I2C_IF_ADDR)
+		{
+			I2C_IntClear(BSP_I2C_SYS, I2C_IFC_ADDR);
+
+			tempAddr = BSP_I2C_SYS->RXDATA;
+
+			// should not receive read request while waiting for ID
+			if((tempAddr & COMMS_I2C_TYPE) == COMMS_I2C_READ)
+			{
+				commsErr = COMMS_ERROR_I2CTLM;
+
+				// send previous TLM already in buffer
+				i2cState = waitForData;
+				i2cTxIndex = 0;
+				BSP_I2C_SYS->TXDATA = i2cTxBuffer[i2cTxIndex++];
+			}
+		}
+		else if (status & I2C_IF_RXDATAV)
+		{
+			tempId = BSP_I2C_SYS->RXDATA;
+
+			// Telemetry ID
+			if( (tempId & COMMS_ID_TYPE) == COMMS_ID_TLM)
+			{
+				processTLM (tempId, i2cTxBuffer);
+
+				i2cTxIndex = 0;
+				i2cState = waitForData;
+			}
+			// Telecommand ID
+			else
+			{
+				// check for tcmd buffer overflow
+				if(tcmdBuffer[(tcmdWriteIndex + 1) % COMMS_TCMD_BUFFLEN].processed == 0)
+				{
+					tcmdBuffFull = 1;
+					commsErr = COMMS_ERROR_TCMDBUFOF;
+
+					i2cState = waitForData;
+				}
+				else
+				{
+					tcmdWriteIndex = (tcmdWriteIndex + 1) % COMMS_TCMD_BUFFLEN;
+					tcmdBuffFull = 0;
+
+					tcmdBuffer[tcmdWriteIndex].id  = tempId;
+					tcmdBuffer[tcmdWriteIndex].len = identifyTCMD (tempId);
+
+					i2cRxIndex = 0;
+					i2cState = waitForData;
+				}
+			}
+		}
+		else if(status & I2C_IEN_SSTOP)
+		{
+			I2C_IntClear(BSP_I2C_SYS, I2C_IEN_SSTOP);
+		}
+		break;
+
+	case waitForData:
+
+		// if data received which is address, start of TLM request
+		if (status & I2C_IF_ADDR)
+		{
+			I2C_IntClear(BSP_I2C_SYS, I2C_IFC_ADDR);
+
+			tempAddr = BSP_I2C_SYS->RXDATA;
+
+			// Send first byte of telemetry buffer
+			if((tempAddr & COMMS_I2C_TYPE) == COMMS_I2C_READ)
+			{
+				BSP_I2C_SYS->TXDATA = i2cTxBuffer[i2cTxIndex++];
+			}
+		}
+		// if data received which is not address, TCMD data
+		else if (status & I2C_IF_RXDATAV)
+		{
+			if (tcmdBuffFull)
+			{
+				// read data to clear interrupt
+				tempData = BSP_UART_DEBUG->RXDATA;
+			}
+			else if (i2cRxIndex < COMMS_TCMD_PARAMLEN)
+			{
+				// save data in TCMD buffer
+				tcmdBuffer[tcmdWriteIndex].params[i2cRxIndex++] = BSP_I2C_SYS->RXDATA;
+			}
+			else
+			{
+				// read data to clear interrupt
+				tempData = BSP_UART_DEBUG->RXDATA;
+
+				// increment index counter for error checking when stop received
+				i2cRxIndex++;
+			}
+		}
+
+		// if ACK received, another TLM byte requested
+		if(status & I2C_IF_ACK)
+		{
+			I2C_IntClear(BSP_I2C_SYS, I2C_IEN_ACK);
+
+			BSP_I2C_SYS->TXDATA = i2cTxBuffer[i2cTxIndex++];
+		}
+
+		// if NACK received, tlm transmission ends
+		if(status & I2C_IF_NACK)
+		{
+			I2C_IntClear(BSP_I2C_SYS, I2C_IFC_NACK);
+
+			i2cState = waitForId;
+		}
+
+		// if STOP received, tcmd transmission ends
+		if(status & I2C_IF_SSTOP)
+		{
+			I2C_IntClear(BSP_I2C_SYS, I2C_IFC_SSTOP);
+
+			if(i2cRxIndex == tcmdBuffer[tcmdWriteIndex].len)
+			{
+				// flag message to be processed
+				tcmdBuffer[tcmdWriteIndex].processed = 0;
+			}
+			else if (i2cRxIndex < tcmdBuffer[tcmdWriteIndex].len)
+			{
+				tcmdBuffer[tcmdWriteIndex].error = COMMS_TCMDERR_PARAMUF;
+				tcmdBuffer[tcmdWriteIndex].processed = 0;
+			}
+			else
+			{
+				tcmdBuffer[tcmdWriteIndex].error = COMMS_TCMDERR_PARAMOF;
+				tcmdBuffer[tcmdWriteIndex].processed = 0;
+			}
+
+			// telecommand data reception complete
+			i2cState = waitForId;
+		}
+		break;
+	}
+}
+#endif
+
+/**********************************************************************************
+ * printing function
+ *********************************************************************************/
+
+void printString( const char * format )
+{
+	xSemaphoreTake( printingMutex, portMAX_DELAY );
+	{
+		debugLen = sprintf((char*)debugStr, format);
+		BSP_UART_txBuffer(BSP_UART_DEBUG,(uint8_t*)debugStr,debugLen, true);
+	}
+	xSemaphoreGive( printingMutex );
+}

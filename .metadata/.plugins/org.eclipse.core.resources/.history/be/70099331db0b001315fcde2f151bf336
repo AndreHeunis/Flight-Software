@@ -1,0 +1,119 @@
+/***************************************************************************//**
+ * @file
+ * @brief   CubeComputer Test Program Main.
+ * @author  Pieter Botma
+ * @version 2.0
+ ******************************************************************************/
+#include "includes.h"
+
+#define VERBOSE 1
+
+uint8_t debugTLM, wdgEnable;
+
+volatile uint32_t msTicks; /* Counts 1ms timeTicks */
+
+/***************************************************************************//**
+ * @brief
+ *   This function is required by the FAT file system in order to provide
+ *   timestamps for created files. Since this example does not include a
+ *   reliable clock we hardcode a value here.
+ *
+ *   Refer to drivers/fatfs/doc/en/fattime.html for the format of this DWORD.
+ * @return
+ *    A DWORD containing the current time and date as a packed data structure.
+ ******************************************************************************/
+DWORD get_fattime(void)
+{
+  return (28 << 25) | (2 << 21) | (1 << 16);
+}
+
+
+/***************************************************************************//**
+ * @brief Delays number of msTick Systicks (typically 1 ms)
+ * @param dlyTicks Number of ticks to delay
+ ******************************************************************************/
+void Delay(uint32_t dlyTicks)
+{
+  uint32_t curTicks;
+
+  curTicks = msec;
+  while ((msec - curTicks) < dlyTicks);
+}
+
+
+/***************************************************************************//**
+ * @brief  Main function
+ * Main is called from _program_start, see assembly startup file
+ ******************************************************************************/
+int main(void)
+{
+  // Initialize chip
+  CHIP_Init();
+
+  // set up general clocks
+  CMU_OscillatorEnable(cmuOsc_HFXO, true, true);
+  CMU_OscillatorEnable(cmuOsc_LFRCO, true, true);
+
+  CMU_ClockSelectSet(cmuClock_HF,  cmuSelect_HFXO);
+  CMU_ClockSelectSet(cmuClock_LFA, cmuSelect_LFRCO);
+
+  CMU_ClockEnable(cmuClock_CORELE, true);
+
+  // Setup SysTick Timer for 1 msec interrupts
+  /*if (SysTick_Config(CMU_ClockFreqGet(cmuClock_CORE) / 1000))
+  {
+    while (1) ;
+  }*/
+
+  BSP_DMA_Init();
+
+  BSP_WDG_Init (false, false);
+  BSP_RTC_Init();
+  BSP_EBI_Init();
+  BSP_ADC_Init();
+
+  COMMS_init();
+
+  debugLen = sprintf((char*)debugStr,"\n\nCubeComputerV3 Debug:\n't' = RTC test\n'a' = ADC test\n'e' = EBI test\n'm' = MicroSD test\n'r' = Reset MCU");
+  BSP_UART_txBuffer(BSP_UART_DEBUG,(uint8_t*)debugStr,debugLen, true);
+
+  uint32_t tick, tock;
+
+  // main loop
+  while(1)
+  {
+	  tock = sec;
+
+	  /**
+	   * Add code here...
+	   */
+
+	  // wait until end of control loop
+	  do{
+		  EMU_EnterEM1();
+
+		  COMMS_processTCMD();
+
+		  tick = sec;
+	  }
+	  while((tick - tock) >= 5); // sets the number of seconds for a control loop
+  }
+
+}
+
+/**********************************************************************************
+ * FreeRTOS functions
+ *********************************************************************************/
+
+void vApplicationStackOverflowHook( xTaskHandle pxTask, signed char *pcTaskName )
+{
+	/* This function will be called if a task overflows its stack, if
+	configCHECK_FOR_STACK_OVERFLOW != 0.  It might be that the function
+	parameters have been corrupted, depending on the severity of the stack
+	overflow.  When this is the case pxCurrentTCB can be inspected in the
+	debugger to find the offending task. */
+	for( ;; );
+}
+
+// Implementation for idle hook needed here? Move the stackoverflowhook and idle hook elsewhere?
+

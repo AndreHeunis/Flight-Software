@@ -1,0 +1,419 @@
+/*
+ * comms.c
+ *
+ *  Created on: 30 Jul 2013
+ *      Author: pjbotma
+ */
+
+#include "comms.h"
+
+enum commsState{
+	waitForId,
+	waitForData
+} uartState, i2cState;
+
+typedef struct{
+	uint8_t id;
+	uint8_t len;
+	uint8_t error;
+	uint8_t processed;
+	uint8_t buffer[COMMS_TCMD_MAXLEN];
+} COMMS_TCMD_TypeDef;
+
+COMMS_TCMD_TypeDef tcmd;
+
+uint16_t tcmdCount = 0;
+uint16_t tlmCount  = 0;
+
+uint16_t commsErr = 0x00;
+
+uint8_t tcmdId 		  = 0;
+uint8_t tcmdLen 	  = 0;
+uint8_t tcmdError 	  = 0x00;
+uint8_t tcmdProcessed = 1;
+uint8_t tcmdBuffer[64];
+
+uint8_t uartRxIndex = 0;
+uint8_t uartTxIndex = 0;
+uint8_t uartTxBuffer[64];
+
+uint8_t i2cRxIndex = 0;
+uint8_t i2cTxIndex = 0;
+uint8_t i2cTxBuffer[64];
+
+void addToBuffer_uint8 (uint8_t *buffer, uint8_t data)
+{
+	*(buffer) = data;
+}
+
+void addToBuffer_uint16 (uint8_t *buffer, uint16_t data)
+{
+	uint8_t *tmp = (uint8_t*)(&data);
+
+	*(buffer  ) = *(tmp  );
+	*(buffer+1) = *(tmp+1);
+}
+
+void addToBuffer_int16 (uint8_t *buffer, int16_t data)
+{
+	uint8_t *tmp = (uint8_t*)(&data);
+
+	*(buffer  ) = *(tmp  );
+	*(buffer+1) = *(tmp+1);
+}
+
+void addToBuffer_uint32 (uint8_t *buffer, uint32_t data)
+{
+	uint8_t *tmp = (uint8_t*)(&data);
+
+	*(buffer  ) = *(tmp  );
+	*(buffer+1) = *(tmp+1);
+	*(buffer+2) = *(tmp+2);
+	*(buffer+3) = *(tmp+3);
+}
+
+uint8_t processTLM(uint8_t id, uint8_t *txBuffer)
+{
+	uint8_t tlmLen;
+
+	switch(id)
+	{
+	case 0x80: // status
+
+		addToBuffer_uint32(&(txBuffer[0]),sec);
+		addToBuffer_uint8 (&(txBuffer[4]),(uint8_t)FIRMWARE_MAJOR);
+		addToBuffer_uint8 (&(txBuffer[5]),(uint8_t)FIRMWARE_MINOR);
+		tlmLen = 6;
+
+		break;
+
+	case 0x81: // communication status
+
+		addToBuffer_uint16(&(txBuffer[0]), tcmdCount);
+		addToBuffer_uint16(&(txBuffer[2]), tlmCount);
+		addToBuffer_uint16(&(txBuffer[4]), commsErr);
+		tlmLen = 6;
+
+		// clear error flags
+		commsErr = 0x00;
+
+		break;
+
+	case 0x82: // telecommand acknowledge
+
+		addToBuffer_uint8(&(txBuffer[0]), tcmdId);
+		addToBuffer_uint8(&(txBuffer[1]), tcmdProcessed);
+		addToBuffer_uint8(&(txBuffer[2]), tcmdError);
+		tlmLen = 3;
+
+		// clear tcmd parameters
+		tcmdId = 0;
+		tcmdProcessed = 1;
+		tcmdError = 0;
+
+		break;
+
+	case 0x83: // current time
+
+		addToBuffer_uint32(&(txBuffer[0]),sec);
+		addToBuffer_uint16(&(txBuffer[4]),msec);
+		tlmLen = 6;
+
+		break;
+
+	default:
+		// error: unknown telemetry id
+		break;
+	}
+
+	tlmCount++;
+
+	return tlmLen;
+}
+
+void identifyTCMD (uint8_t id)
+{
+	if(tcmdError)
+		return; // wait for "telecommand acknowledge" telemetry msg (0x82) to clear error flag
+
+	if(!tcmdProcessed)
+	{
+		tcmdError = COMMS_TCMDERR_OVERFLOW;
+		return;
+	}
+
+	switch(id)
+	{
+
+	case 0x01:
+		tcmdLen = 0;
+		break;
+
+	case 0x2:
+		tcmdLen = 1;
+		break;
+
+	/*
+	case 0x03: // activate/deactivate ADCS
+	case 0x05: // power on
+	case 0x06: // power off
+	case 0x10: // set orbit estimation mode
+	case 0x11: // set attitude estimation mode
+	case 0x12: // set control mode
+		tcmdLen = 1;
+		break;
+
+	case 0x04: // logging control
+	case 0x77: // set magnetorquer maximum on time
+	case 0x78: // set magnetorquer PWM resolution
+		tcmdLen = 2;
+		break;
+
+	case 0x02: // set time
+	case 0x13: // set reference attitude
+	case 0x20: // set wheel speeds
+	case 0x21: // set torquer duty cycle
+	case 0x48: // set satellite position vector
+	case 0x49: // set satellite velocity vector
+	case 0x60: // set reference momentum (Href)
+	case 0x61: // set magnetorquer activity timeout
+		tcmdLen = 6;
+		break;
+	*/
+
+	default:
+		// flag tcmd error
+		tcmdLen = 0;
+		tcmdError = COMMS_TCMDERR_ID;
+		break; // !Note we exit function
+	}
+
+	tcmdId = id;
+
+	return;
+}
+
+
+void COMMS_processTCMD(void)
+{
+	if(tcmdProcessed)
+		return; // no need to proceed, no tcmd to process
+
+	if(tcmdError)
+		return; // wait for "telecommand acknowledge" telemetry msg (0x82) to clear error flag
+
+	switch(tcmdId)
+	{
+	case 0x01:
+		SCB->AIRCR = 0x05FA0004; // Reset MCU
+		break;
+
+	case 0x02:
+		BSP_UART_txByte(BSP_UART_DEBUG, tcmdBuffer[0]);
+		break;
+
+	default:
+		while(1); // error!
+		break;
+	}
+
+	tcmdProcessed = 1;
+	tcmdCount++;
+}
+
+void BSP_UART_DEBUG_IRQHandler(void) // DEBUG UART = USART1
+{
+	uint8_t tempId, tempLen;
+
+	// disable interrupt
+	BSP_UART_DEBUG->IEN &= ~USART_IEN_RXDATAV;
+
+	// check for RX data valid interrupt
+	if (BSP_UART_DEBUG->STATUS & UART_STATUS_RXDATAV)
+	{
+		// check uart state
+		switch(uartState)
+		{
+		case waitForId:
+
+			tempId = USART_Rx(BSP_UART_DEBUG);
+
+			// test ID type
+			if( (tempId & COMMS_ID_TYPE) == COMMS_ID_TLM)
+			{
+				/**
+				 * Telemetry are processed in the interrupt handler because they
+				 * consist of only loading data into the TX buffer which is then
+				 * transmitted via the DMA controller.
+				 */
+				tempLen = processTLM (tempId, uartTxBuffer);
+
+
+				if(BSP_UART_txInProgress())
+				{
+					commsErr |= COMMS_ERROR_I2CTLMERR;
+				}
+				else
+				{
+					BSP_UART_txBuffer(BSP_UART_DEBUG, uartTxBuffer, tempLen, false);
+				}
+			}
+			else
+			{
+				/**
+				 * Telecommand length is identified in the interrupt handler and
+				 * flagged for processing later on in the main loop.
+				 */
+				tcmd.id  = tempId;
+				tcmd.len = identifyTCMD (tempId);
+
+				// if tcmd has length, switch uart state, else flag for processing
+				if(tcmd.len > 0)
+				{
+					uartRxIndex = 0;
+					uartState = waitForData;
+				}
+				else
+				{
+					tcmd.processed = 0;
+				}
+			}
+			break;
+
+		case waitForData:
+			// save data to buffer
+			tcmd.buffer[uartRxIndex++] = USART_Rx(BSP_UART_DEBUG);
+
+			// flag telecommand if enough bytes received
+			if(uartRxIndex == tcmd.len)
+			{
+				// flag message to be processed
+				tcmd.processed = 0;
+
+				// telecommand data reception complete
+				uartState = waitForId;
+			}
+			break;
+		}
+	}
+
+	// enable interrupt
+	BSP_UART_DEBUG->IEN |= USART_IEN_RXDATAV;
+}
+
+
+/**
+ * I2C interrupt handler
+ */
+void I2C0_IRQHandler(void)
+{
+	int status;
+	uint8_t tempAddr, tempId;
+
+	status = BSP_I2C_SYS->IF;
+
+	// data received which is address match, either start of msg or start of tlm transmission
+	if (status & I2C_IF_ADDR)
+	{
+		I2C_IntClear(BSP_I2C_SYS, I2C_IFC_ADDR);
+
+		tempAddr = BSP_I2C_SYS->RXDATA;
+
+		// if read request (TLM), transmit first data byte
+		if((tempAddr & COMMS_I2C_TYPE) == COMMS_I2C_READ)
+		{
+			// sanity check, id should have already been processed
+			if(i2cState == waitForId)
+			{
+				// error!, proceed with previous tlm buffer in any case
+				commsErr |= COMMS_ERROR_I2CTLMERR;
+
+				i2cTxIndex = 0;
+				i2cState = waitForData;
+			}
+
+			BSP_I2C_SYS->TXDATA = i2cTxBuffer[i2cTxIndex++];
+		}
+	}
+	// if data received which is not address, could be id or tcmd data
+	else if (status & I2C_IF_RXDATAV)
+	{
+		if(i2cState == waitForId)
+		{
+			tempId = BSP_I2C_SYS->RXDATA;
+
+			if( (tempId & COMMS_ID_TYPE) == COMMS_ID_TLM)
+			{
+				/**
+				 * Telemetry are processed in the interrupt handler because they
+				 * consist of only loading data into the TX buffer.
+				 */
+				processTLM (tempId, i2cTxBuffer);
+
+				i2cTxIndex = 0;
+				i2cState = waitForData;
+			}
+			else
+			{
+				/**
+				 * Telecommand length is identified in the interrupt handler and
+				 * flagged for processing later on in the main loop.
+				 */
+				identifyTCMD (tempId);
+
+				i2cRxIndex = 0;
+				i2cState = waitForData;
+			}
+		}
+		else
+		{
+			tcmdBuffer[i2cRxIndex++] = BSP_I2C_SYS->RXDATA;
+		}
+	}
+
+	// if ACK received, another TLM byte requested
+	if(status & I2C_IF_ACK)
+	{
+		I2C_IntClear(BSP_I2C_SYS, I2C_IEN_ACK);
+
+		BSP_I2C_SYS->TXDATA = i2cTxBuffer[i2cTxIndex++];
+	}
+
+	// if NACK received, tlm transmission ends
+	if(status & I2C_IF_NACK)
+	{
+		I2C_IntClear(BSP_I2C_SYS, I2C_IFC_NACK);
+
+		i2cState = waitForId;
+	}
+
+	// if STOP received, tcmd transmission ends
+	if(status & I2C_IEN_SSTOP)
+	{
+		I2C_IntClear(BSP_I2C_SYS, I2C_IEN_SSTOP);
+
+		/**
+		 * !Note, this is a hack to check if the end of a tcmd stop.
+		 * For tlm stop, the i2cState would have already been switched in NACK interrupt.
+		 */
+		if(i2cState == waitForData)
+		{
+			if(i2cRxIndex == tcmdLen)
+			{
+				// flag message to be processed
+				tcmdProcessed = 0;
+			}
+			else if (i2cRxIndex < tcmdLen)
+			{
+				tcmdError = COMMS_TCMDERR_UNDERFLOW;
+			}
+			else
+			{
+				tcmdError = COMMS_TCMDERR_OVERFLOW;
+			}
+
+			// telecommand data reception complete
+			i2cState = waitForId;
+		}
+	}
+}

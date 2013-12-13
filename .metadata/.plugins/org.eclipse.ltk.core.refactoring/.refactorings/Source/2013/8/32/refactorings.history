@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Rename resource &apos;Source/libraries/fatfsV2&apos; to &apos;fatfs&apos;" description="Rename resource &apos;fatfsV2&apos;" flags="7" id="org.eclipse.ltk.core.refactoring.rename.resource" input="libraries/fatfsV2" name="fatfs" stamp="1375793459978" updateReferences="true"/>
+</session>

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<cdtprojectproperties>
+<section name="org.eclipse.cdt.internal.ui.wizards.settingswizards.IncludePaths">
+<language name="holder for library settings">
+
+</language>
+<language name="Assembly">
+
+</language>
+<language name="GNU C++">
+
+</language>
+<language name="GNU C">
+<includepath>C:\Program Files\CodeSourcery\Sourcery G++ Lite\arm-none-eabi\include</includepath>
+<includepath>C:\Program Files\CodeSourcery\Sourcery G++ Lite\lib\gcc\arm-none-eabi\4.4.1\include</includepath>
+<includepath>${WorkspaceDirPath}/Source</includepath>
+<includepath>${WorkspaceDirPath}/libraries/CMSIS/Include</includepath>
+<includepath>${WorkspaceDirPath}/libraries/Device/EnergyMicro/EFM32GG/Include</includepath>
+<includepath>${WorkspaceDirPath}/libraries/emlib/inc</includepath>
+<includepath>${WorkspaceDirPath}/libraries/bspLib/inc</includepath>
+<includepath>${WorkspaceDirPath}/libraries/flashLib</includepath>
+<includepath>${WorkspaceDirPath}/libraries/fatfs/inc</includepath>
+
+</language>
+</section>
+<section name="org.eclipse.cdt.internal.ui.wizards.settingswizards.Macros">
+<language name="holder for library settings">
+
+</language>
+<language name="Assembly">
+
+</language>
+<language name="GNU C++">
+
+</language>
+<language name="GNU C">
+<macro>
+<name>EFM32GG280F1024</name><value>1</value>
+</macro>
+<macro>
+<name>CubeCompV3</name><value>1</value>
+</macro>
+
+</language>
+</section>
+</cdtprojectproperties>

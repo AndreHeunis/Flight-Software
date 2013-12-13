@@ -1,0 +1,13 @@
+Release Notes
+
+This package contains  LLD Release Version 12.1.1.
+ 
+Major changes in the release include:
+1. Add support for GLN device.
+2. Add support for CL-J/CD-J device. 
+3. Match suspendse/resume commands of GLP, GLN with datasheet. 
+4. Remove unused "WriteBufferProgramming" variable.
+
+
+SSE, Spansion
+Feb 2, 2011

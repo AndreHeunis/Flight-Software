@@ -1,0 +1,174 @@
+/***************************************************************************//**
+ * @file
+ * @brief   CubeComputer Test Program Main.
+ * @author  Pieter Botma
+ * @version 2.0
+ ******************************************************************************/
+#include "includes.h"
+
+
+uint8_t debugTLM, wdgEnable;
+
+volatile uint32_t msTicks; /* Counts 1ms timeTicks */
+
+/***************************************************************************//**
+ * @brief
+ *   This function is required by the FAT file system in order to provide
+ *   timestamps for created files. Since this example does not include a
+ *   reliable clock we hardcode a value here.
+ *
+ *   Refer to drivers/fatfs/doc/en/fattime.html for the format of this DWORD.
+ * @return
+ *    A DWORD containing the current time and date as a packed datastructure.
+ ******************************************************************************/
+DWORD get_fattime(void)
+{
+  return (28 << 25) | (2 << 21) | (1 << 16);
+}
+
+
+/**************************************************************************//**
+ * @brief SysTick_Handler
+ * Interrupt Service Routine for system tick counter.
+ *****************************************************************************/
+void SysTick_Handler(void)
+{
+  // Increment counter necessary in Delay()
+  msTicks++;
+}
+
+
+/***************************************************************************//**
+ * @brief Delays number of msTick Systicks (typically 1 ms)
+ * @param dlyTicks Number of ticks to delay
+ ******************************************************************************/
+void Delay(uint32_t dlyTicks)
+{
+  uint32_t curTicks;
+
+  curTicks = msTicks;
+  while ((msTicks - curTicks) < dlyTicks);
+}
+
+
+/***************************************************************************//**
+ * @brief  Main function
+ * Main is called from _program_start, see assembly startup file
+ ******************************************************************************/
+int main(void)
+{
+
+  //SCB->VTOR=0x80000;
+
+  // Initialize chip
+  CHIP_Init();
+
+  // set up general clocks
+  CMU_OscillatorEnable(cmuOsc_HFXO, true, true);
+  CMU_OscillatorEnable(cmuOsc_LFXO, true, true);
+
+  CMU_ClockSelectSet(cmuClock_HF,  cmuSelect_HFXO);
+  CMU_ClockSelectSet(cmuClock_LFA, cmuSelect_LFXO); // RTC
+
+  CMU_ClockEnable(cmuClock_CORELE, true);
+
+  // Setup SysTick Timer for 1 msec interrupts
+  if (SysTick_Config(CMU_ClockFreqGet(cmuClock_CORE) / 1000))
+  {
+    while (1) ;
+  }
+
+  BSP_DMA_Init();
+
+  BSP_UART_Init(BSP_UART_DEBUG);
+  //BSP_WDG_Init (true, false);
+  BSP_RTC_Init();
+  BSP_ADC_Init();
+  BSP_EBI_Init();
+  BSP_ACMP_Init(BSP_ACMP_SRAM1);
+  BSP_ACMP_Init(BSP_ACMP_SRAM2);
+
+  //wdgEnable = 1;
+
+  // Welcome message
+
+  char string[64], welcomMsg[256];
+  uint8_t len, welcomeLen;
+
+  welcomeLen = sprintf(welcomMsg,"\n\nCubeComputerV2B Debug:\n't' = RTC test\n'a' = ADC test\n'e' = EBI test\n'c' = Analog Comparator test\n'm' = MicroSD test\n'w' = Disable Watchdog");
+  BSP_UART_txBuffer(BSP_UART_DEBUG,(uint8_t*)welcomMsg,welcomeLen);
+
+  // main loop
+  while(1)
+  {
+	  switch(debugTLM)
+	  {
+	  case 't':
+		  TEST_RTC();
+		  debugTLM = 0x00; // clear flag
+		  break;
+
+	  case 'a':
+		  TEST_ADC();
+		  debugTLM = 0x00; // clear flag
+		  break;
+
+	  case 'e':
+		  TEST_EBI();
+		  debugTLM = 0x00; // clear flag
+		  break;
+
+	  case 'c':
+		  TEST_ACMP();
+		  debugTLM = 0x00; // clear flag
+		  break;
+
+	  case 'm':
+		  TEST_microSD();
+		  debugTLM = 0x00; // clear flag
+		  break;
+
+	  case 'w':
+		  len = sprintf(string,"\n\nWatchdog disabled! Reset in 2 seconds.");
+		  BSP_UART_txBuffer(BSP_UART_DEBUG,(uint8_t*)string,len);
+		  wdgEnable = 0;
+		  debugTLM = 0x00; // clear flag
+		  break;
+
+	  case 0x00: // woken by other interrupt (eg. RTC)
+		  if(wdgEnable)
+		  {
+			  BSP_WDG_ToggleInt();
+		  }
+		  break;
+
+	  default: // unspecified debug telemetry id
+		  len = sprintf(string,"\n\nUnknown telecommand: %c", debugTLM);
+		  BSP_UART_txBuffer(BSP_UART_DEBUG,(uint8_t*)string,len);
+		  BSP_UART_txBuffer(BSP_UART_DEBUG,(uint8_t*)welcomMsg,welcomeLen);
+		  EMU_EnterEM1();
+		  debugTLM = 0x00;
+		  break;
+	  }
+
+	  EMU_EnterEM1(); // sleep until woken by interrupt (either RTC/UART)
+  }
+}
+
+
+/**
+ * UART interrupt handler
+ */
+void BSP_UART_DEBUG_IRQHandler(void) // DEBUG UART = USART0
+{
+  // Check for RX data valid interrupt
+  if (BSP_UART_DEBUG->STATUS & UART_STATUS_RXDATAV)
+  {
+    // Copy data into RX Buffer
+    debugTLM = USART_Rx(BSP_UART_DEBUG);
+
+    // Clear RXDATAV interrupt
+    USART_IntClear(BSP_UART_DEBUG, UART_IF_RXDATAV);
+  }
+}
+

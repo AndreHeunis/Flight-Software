@@ -1,0 +1,65 @@
+*** Creating Trace Output File '.\obj\CubeComputer.tra' Ok.
+### Preparing for ADS-LD.
+### Creating ADS-LD Command Line
+### List of Objects: adding '".\obj\startup_efm32gg.o"'
+### List of Objects: adding '".\obj\system_efm32gg.o"'
+### List of Objects: adding '".\obj\bsp_acmp.o"'
+### List of Objects: adding '".\obj\bsp_adc.o"'
+### List of Objects: adding '".\obj\bsp_dma.o"'
+### List of Objects: adding '".\obj\bsp_ebi.o"'
+### List of Objects: adding '".\obj\bsp_i2c.o"'
+### List of Objects: adding '".\obj\bsp_rtc.o"'
+### List of Objects: adding '".\obj\bsp_uart.o"'
+### List of Objects: adding '".\obj\bsp_wdg.o"'
+### List of Objects: adding '".\obj\em_acmp.o"'
+### List of Objects: adding '".\obj\em_adc.o"'
+### List of Objects: adding '".\obj\em_aes.o"'
+### List of Objects: adding '".\obj\em_assert.o"'
+### List of Objects: adding '".\obj\em_burtc.o"'
+### List of Objects: adding '".\obj\em_cmu.o"'
+### List of Objects: adding '".\obj\em_dac.o"'
+### List of Objects: adding '".\obj\em_dbg.o"'
+### List of Objects: adding '".\obj\em_dma.o"'
+### List of Objects: adding '".\obj\em_ebi.o"'
+### List of Objects: adding '".\obj\em_emu.o"'
+### List of Objects: adding '".\obj\em_gpio.o"'
+### List of Objects: adding '".\obj\em_i2c.o"'
+### List of Objects: adding '".\obj\em_int.o"'
+### List of Objects: adding '".\obj\em_lcd.o"'
+### List of Objects: adding '".\obj\em_lesense.o"'
+### List of Objects: adding '".\obj\em_letimer.o"'
+### List of Objects: adding '".\obj\em_leuart.o"'
+### List of Objects: adding '".\obj\em_mpu.o"'
+### List of Objects: adding '".\obj\em_msc.o"'
+### List of Objects: adding '".\obj\em_opamp.o"'
+### List of Objects: adding '".\obj\em_pcnt.o"'
+### List of Objects: adding '".\obj\em_prs.o"'
+### List of Objects: adding '".\obj\em_rmu.o"'
+### List of Objects: adding '".\obj\em_rtc.o"'
+### List of Objects: adding '".\obj\em_system.o"'
+### List of Objects: adding '".\obj\em_timer.o"'
+### List of Objects: adding '".\obj\em_usart.o"'
+### List of Objects: adding '".\obj\em_vcmp.o"'
+### List of Objects: adding '".\obj\em_wdog.o"'
+### List of Objects: adding '".\obj\lld.o"'
+### List of Objects: adding '".\obj\diskio.o"'
+### List of Objects: adding '".\obj\ff.o"'
+### List of Objects: adding '".\obj\microsd.o"'
+### List of Objects: adding '".\obj\main.o"'
+### List of Objects: adding '".\obj\tests.o"'
+### ADS-LD Command completed:
+--cpu Cortex-M3 ".\obj\startup_efm32gg.o" ".\obj\system_efm32gg.o" ".\obj\bsp_acmp.o" ".\obj\bsp_adc.o" ".\obj\bsp_dma.o" ".\obj\bsp_ebi.o" ".\obj\bsp_i2c.o" ".\obj\bsp_rtc.o" ".\obj\bsp_uart.o" ".\obj\bsp_wdg.o" ".\obj\em_acmp.o" ".\obj\em_adc.o" ".\obj\em_aes.o" ".\obj\em_assert.o" ".\obj\em_burtc.o" ".\obj\em_cmu.o" ".\obj\em_dac.o" ".\obj\em_dbg.o" ".\obj\em_dma.o" ".\obj\em_ebi.o" ".\obj\em_emu.o" ".\obj\em_gpio.o" ".\obj\em_i2c.o" ".\obj\em_int.o" ".\obj\em_lcd.o" ".\obj\em_lesense.o" ".\obj\em_letimer.o" ".\obj\em_leuart.o" ".\obj\em_mpu.o" ".\obj\em_msc.o" ".\obj\em_opamp.o" ".\obj\em_pcnt.o" ".\obj\em_prs.o" ".\obj\em_rmu.o" ".\obj\em_rtc.o" ".\obj\em_system.o" ".\obj\em_timer.o" ".\obj\em_usart.o" ".\obj\em_vcmp.o" ".\obj\em_wdog.o" ".\obj\lld.o" ".\obj\diskio.o" ".\obj\ff.o" ".\obj\microsd.o" ".\obj\main.o" ".\obj\tests.o" 
+--library_type=microlib --strict --scatter ".\obj\CubeComputer.sct" 
+--summary_stderr --info summarysizes --map --xref --callgraph --symbols 
+--info sizes --info totals --info unused --info veneers 
+ --list ".\CubeComputer.map" -o .\obj\CubeComputer.axf### Preparing Environment (PrepEnvAds)
+### ADS-LD Output File: '.\obj\CubeComputer.axf'
+### ADS-LD Command File: '.\obj\CubeComputer.lnp'
+### Checking for dirty Components...
+### Creating CmdFile '.\obj\CubeComputer.lnp', Handle=0x000007B4
+### Writing '.lnp' file
+### ADS-LD Command file '.\obj\CubeComputer.lnp' is ready.
+### ADS-LD: About to start ADS-LD Thread.
+### ADS-LD: executed with 1 errors
+### Updating obj list
+### LDADS_file() completed.

@@ -1,0 +1,91 @@
+/***************************************************************************//**
+ * @file
+ * @brief   CubeComputer Test Program Main.
+ * @author  Pieter Botma
+ * @version 2.0
+ ******************************************************************************/
+#include "includes.h"
+
+#define VERBOSE 1
+
+uint8_t debugTLM, wdgEnable;
+
+volatile uint32_t msTicks; /* Counts 1ms timeTicks */
+
+/***************************************************************************//**
+ * @brief
+ *   This function is required by the FAT file system in order to provide
+ *   timestamps for created files. Since this example does not include a
+ *   reliable clock we hardcode a value here.
+ *
+ *   Refer to drivers/fatfs/doc/en/fattime.html for the format of this DWORD.
+ * @return
+ *    A DWORD containing the current time and date as a packed data structure.
+ ******************************************************************************/
+DWORD get_fattime(void)
+{
+  return (28 << 25) | (2 << 21) | (1 << 16);
+}
+
+
+/***************************************************************************//**
+ * @brief Delays number of msTick Systicks (typically 1 ms)
+ * @param dlyTicks Number of ticks to delay
+ ******************************************************************************/
+void Delay(uint32_t dlyTicks)
+{
+  uint32_t curTicks;
+
+  curTicks = msec;
+  while ((msec - curTicks) < dlyTicks);
+}
+
+
+/***************************************************************************//**
+ * @brief  Main function
+ * Main is called from _program_start, see assembly startup file
+ ******************************************************************************/
+int main(void)
+{
+
+  //SCB->VTOR=0x80000;
+
+  // Initialize chip
+  CHIP_Init();
+
+  // set up general clocks
+  CMU_OscillatorEnable(cmuOsc_HFXO, true, true);
+  CMU_OscillatorEnable(cmuOsc_LFXO, true, true);
+
+  CMU_ClockSelectSet(cmuClock_HF,  cmuSelect_HFXO);
+  CMU_ClockSelectSet(cmuClock_LFA, cmuSelect_LFXO);
+
+  CMU_ClockEnable(cmuClock_CORELE, true);
+
+  // Setup SysTick Timer for 1 msec interrupts
+  /*if (SysTick_Config(CMU_ClockFreqGet(cmuClock_CORE) / 1000))
+  {
+    while (1) ;
+  }*/
+
+  BSP_DMA_Init();
+
+  BSP_WDG_Init (false, false);
+  BSP_RTC_Init();
+  BSP_UART_Init(BSP_UART_DEBUG);
+  BSP_I2C_Init(BSP_I2C_SYS, false);
+
+  uint8_t welcomeLen, welcomMsg[256];
+
+  welcomeLen = sprintf((char*)welcomMsg,"\n\nCubeComputerV3 Comms Test!\n");
+  BSP_UART_txBuffer(BSP_UART_DEBUG,(uint8_t*)welcomMsg,welcomeLen, true);
+
+  // main loop
+  while(1)
+  {
+	  COMMS_processTCMD();
+	  EMU_EnterEM1();
+  }
+
+}
+

@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">&#x0A;<refactoring comment="Rename resource &apos;Source/libraries/FSW/inc/fsw_CDH.h&apos; to &apos;fsw_cdh.h&apos;" description="Rename resource &apos;fsw_CDH.h&apos;" flags="7" id="org.eclipse.ltk.core.refactoring.rename.resource" input="libraries/FSW/inc/fsw_CDH.h" name="fsw_cdh.h" stamp="1377589963539" updateReferences="true"/>&#x0A;<refactoring comment="Rename resource &apos;Source/libraries/FSW/src/fsw_CDH.c&apos; to &apos;fsw_cdh.c&apos;" description="Rename resource &apos;fsw_CDH.c&apos;" flags="7" id="org.eclipse.ltk.core.refactoring.rename.resource" input="libraries/FSW/src/fsw_CDH.c" name="fsw_cdh.c" stamp="1377589971031" updateReferences="true"/>
+</session>

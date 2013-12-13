@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">&#x0A;<refactoring comment="Rename resource &apos;Source/libraries/FSW/inc/HILL_comm.h&apos; to &apos;HIL_comm.h&apos;" description="Rename resource &apos;HILL_comm.h&apos;" flags="7" id="org.eclipse.ltk.core.refactoring.rename.resource" input="libraries/FSW/inc/HILL_comm.h" name="HIL_comm.h" stamp="1379507722329" updateReferences="true"/>&#x0A;<refactoring comment="Rename resource &apos;Source/libraries/FSW/src/HILL_comm.c&apos; to &apos;HIL_comm.c&apos;" description="Rename resource &apos;HILL_comm.c&apos;" flags="7" id="org.eclipse.ltk.core.refactoring.rename.resource" input="libraries/FSW/src/HILL_comm.c" name="HIL_comm.c" stamp="1379507728991" updateReferences="true"/>
+</session>

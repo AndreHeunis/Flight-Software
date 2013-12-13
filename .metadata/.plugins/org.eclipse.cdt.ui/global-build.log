@@ -1,0 +1,21 @@
+
+**** Build of configuration Default for project Source ****
+
+cs-make all 
+"Building file: ../main.c"
+"C:\Program Files/CodeSourcery/Sourcery_CodeBench_Lite_for_ARM_EABI/bin/arm-none-eabi-gcc" -DEFM32GG280F1024 -DCubeCompV2B -mcpu=cortex-m3 -mthumb -ffunction-sections -fdata-sections -mfix-cortex-m3-ldrd -fomit-frame-pointer -Wall -DDEBUG_EFM  -MMD -MP -MF build/main.d -DDEBUG -O0 -g3 -I.. -I../../libraries/CMSIS/Include -I../../libraries/Device/EnergyMicro/EFM32GG/Include -I../../libraries/emlib/inc -I../../libraries/bspLib/inc -I../../libraries/flashLib -I../../libraries/flashLib/device -I../../libraries/flashLib/asp -I../../libraries/flashLib/trace -I../../libraries/fatfs/inc -I../../libraries/FreeRTOS/Source/include -I../../libraries/FreeRTOS/Source/portable/GCC/ARM_CM3 -I../../libraries/FSW/inc -c -o build/main.o ../main.c
+../main.c: In function 'main':
+../main.c:94:2: warning: pointer targets in passing argument 2 of 'xTaskGenericCreate' differ in signedness [-Wpointer-sign]
+In file included from ../includes.h:51:0,
+                 from ../main.c:7:
+../../libraries/FreeRTOS/Source/include/task.h:1476:22: note: expected 'const signed char * const' but argument is of type 'char *'
+"Linking target: exe/Source.out"
+"C:\Program Files/CodeSourcery/Sourcery_CodeBench_Lite_for_ARM_EABI/bin/arm-none-eabi-gcc" -Xlinker -Map=lst/Source.map -mcpu=cortex-m3 -mthumb -T../../libraries/Device/EnergyMicro/EFM32GG/Source/G++/efm32ggRelease.ld -L"C:\Program Files/CodeSourcery/Sourcery_CodeBench_Lite_for_ARM_EABI/arm-none-eabi/lib/thumb2" -L"C:\Program Files/CodeSourcery/Sourcery_CodeBench_Lite_for_ARM_EABI/lib/gcc/arm-none-eabi/4.7.3/thumb2" -Wl,--gc-sections build/system_efm32gg.o build/em_system.o build/em_adc.o build/em_assert.o build/em_cmu.o build/em_dma.o build/em_ebi.o build/em_emu.o build/em_gpio.o build/em_i2c.o build/em_rtc.o build/em_usart.o build/em_wdog.o build/em_acmp.o build/bsp_acmp.o build/bsp_uart.o build/bsp_rtc.o build/bsp_wdg.o build/bsp_adc.o build/bsp_dma.o build/bsp_i2c.o build/bsp_ebi.o build/lld.o build/ff.o build/diskio.o build/microsd.o build/list.o build/queue.o build/tasks.o build/timers.o build/heap_4.o build/port.o build/fsw_adcs.o build/fsw_cdh.o build/fsw_comm.o build/fsw_filesystem.o build/fsw_healthandhousekeeping.o build/fsw_payload.o build/fsw_power.o build/fsw_modes.o build/z_HILcomm.o build/background.o build/comms.o build/tests.o build/main.o build/startup_efm32gg.o -Wl,--start-group -lgcc -lc -lcs3 -lcs3unhosted -Wl,--end-group -o exe/Source.out
+C:\Program Files/CodeSourcery/Sourcery_CodeBench_Lite_for_ARM_EABI/arm-none-eabi/lib/thumb2\libcs3unhosted.a(unhosted-_close.o): warning: IO function '_close' used
+C:\Program Files/CodeSourcery/Sourcery_CodeBench_Lite_for_ARM_EABI/arm-none-eabi/lib/thumb2\libcs3unhosted.a(unhosted-_fstat.o): warning: IO function '_fstat' used
+"Creating binary file"
+"C:\Program Files/CodeSourcery/Sourcery_CodeBench_Lite_for_ARM_EABI/bin/arm-none-eabi-objcopy" -O binary exe/Source.out exe/Source.bin
+C:\Program Files/CodeSourcery/Sourcery_CodeBench_Lite_for_ARM_EABI/arm-none-eabi/lib/thumb2\libcs3unhosted.a(unhosted-_open.o): warning: IO function '_open' used
+C:\Program Files/CodeSourcery/Sourcery_CodeBench_Lite_for_ARM_EABI/arm-none-eabi/lib/thumb2\libcs3unhosted.a(unhosted-_read.o): warning: IO function '_read' used
+
+**** Build Finished ****
