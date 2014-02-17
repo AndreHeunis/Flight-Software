@@ -423,28 +423,49 @@ static void FSW_CDH_processDIARY( void *pvParameters )
 		if(DIARY_Q_Status == pdPASS)
 		{
 			// Loop through every command in the diary and dispatch it to the relevant module
-			for( DiaryEntry = 0; DiaryEntry < CDH_DIARY_CMDCOUNT; DiaryEntry++ )
+			for( DiaryEntry = 0; DiaryEntry < ReceivedDIARY.CmdCount; DiaryEntry++ )
 			{
+				xQueueSendToBack( FSW_CDH_CMDqueue, &ReceivedDIARY.CMDlist[DiaryEntry], 0 );
+				/*
 				switch(ReceivedDIARY.CMDlist[DiaryEntry].dest)
 				{
 				case FSW_ADCS:
 					xQueueSendToBack( FSW_ADCS_CMDqueue, &ReceivedDIARY.CMDlist[DiaryEntry], 0 );
 					break;
 
-				case FSW_POWER:
-					xQueueSendToBack( FSW_POWER_CMDqueue, &ReceivedDIARY.CMDlist[DiaryEntry], 0 );
+				case FSW_CDH:
+					xQueueSendToBack( FSW_CDH_CMDqueue, &ReceivedDIARY.CMDlist[DiaryEntry], 0 );
 					break;
 
 				case FSW_COMM:
+					xQueueSendToBack( FSW_COMM_CMDqueue, &ReceivedDIARY.CMDlist[DiaryEntry], 0 );
+					break;
+
+				case FSW_FS:
+					xQueueSendToBack( FSW_FS_CMDqueue, &ReceivedDIARY.CMDlist[DiaryEntry], 0 );
+					break;
+
+				case FSW_HANDH:
+					xQueueSendToBack( FSW_HANDH_CMDqueue, &ReceivedDIARY.CMDlist[DiaryEntry], 0 );
+					break;
+
+				case FSW_MODES:
+					xQueueSendToBack( FSW_MODES_CMDqueue, &ReceivedDIARY.CMDlist[DiaryEntry], 0 );
 					break;
 
 				case FSW_PAYLOAD:
+					xQueueSendToBack( FSW_PAYLOAD_CMDqueue, &ReceivedDIARY.CMDlist[DiaryEntry], 0 );
+					break;
+
+				case FSW_POWER:
+					xQueueSendToBack( FSW_POWER_CMDqueue, &ReceivedDIARY.CMDlist[DiaryEntry], 0 );
 					break;
 
 				default:
 					FSW_CDH_MSV &= ERROR_CMDINV;
 					break;
 				}
+				*/
 			}
 		}
 

@@ -177,6 +177,9 @@ static void FSW_ADCS_manager( void *pvParameters )
 {
 	portBASE_TYPE Status;
 	CDH_CMD_TypeDef ReceivedCMD;
+	uint8_t I2Cbuffer[64];				///< Buffer for data to be sent over I2C bus
+	int32_t I2Clen = 0;					///< Length of data to be sent over I2C bus
+	COMM_I2Cmsg_TypeDef I2Cmsg;			///< Structure to populate with desired I2C message
 
 	while(1)
 	{
@@ -200,6 +203,29 @@ static void FSW_ADCS_manager( void *pvParameters )
 
 			case 0x04:													// Test CMD
 				FSW_ADCS_runAlgorithm();
+				break;
+
+			case 0x05:													// Send a status TLM request to CubeSense
+				// Add tlm id to buffer and retrieve length of TLM to be received
+				I2Clen = CUBESENSE_createTelemetryRequest(I2Cbuffer, CubeSenseTlmIdIdentification);
+
+				// Construct data (TLM buffer and length) to send to the I2C manager. Will need to include I2C write address of CubeSense somehow
+				FSW_COMM_constructI2Cmsg( &I2Cmsg, I2Cbuffer, FSW_ADCS, I2CADDR_CUBESENSE_W, I2Clen );
+
+				// Send buffer and length to i2c manager to be transmitted to CubeSense
+				xQueueSendToBack( FSW_COMM_I2Cqueue, &I2Cmsg, 0 );
+
+				// Receive TLM data back here?
+
+				// Update TLM structure?
+				int8_t CUBESENSE_updateTlmIdentification(CUBESENSE_TlmIdentification_TypeDef* identification, uint8_t* tlmBuffer);
+				break;
+
+			case 0x06:													// Send a comm status TLM request to CubeSense
+
+				//int8_t CUBESENSE_updateTlmCommsStatus(CUBESENSE_TlmCommsStatus_TypeDef* commsStatus, uint8_t* tlmBuffer);
+				//int8_t CUBESENSE_updateTlmCommsStatus(CUBESENSE_TlmCommsStatus_TypeDef* commsStatus, uint8_t* tlmBuffer);
+
 				break;
 
 			default:

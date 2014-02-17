@@ -36,4 +36,6 @@
 			<item value="org.eclipse.debug.ui"/>
 		</list>
 	</section>
+	<section name="ImportExportAction">
+	</section>
 </section>

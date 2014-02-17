@@ -46,6 +46,13 @@ uint8_t i2cTxBuffer[64];
 
 uint8_t debugStr[64], debugLen;
 
+// buffers and vars for testing I2C comms to CubeSense 2014/02/07
+uint8_t txBuffer[64];
+uint16_t txBufferSize;
+uint8_t rxBuffer[64];
+uint16_t rxBufferSize;
+uint8_t TLMreturn[32], TLMreturn_len;
+
 // FreeRTOS queue in which to queue up subsystem commands
 extern xQueueHandle FSW_CDH_CMDqueue;
 
@@ -89,7 +96,7 @@ void COMMS_init(void)
 	int i;
 
 	BSP_UART_Init(BSP_UART_DEBUG);
-	BSP_I2C_Init(BSP_I2C_SYS, false);
+	BSP_I2C_Init(BSP_I2C_SYS, true);			// Initialise FSW as master on I2C bus
 
 	for(i = 0; i < COMMS_TCMD_BUFFLEN; i++)
 	{
@@ -234,6 +241,50 @@ void COMMS_processTCMD(void)
 				log_entry.id = 0x02;
 
 				xQueueSendToBack( FSW_FS_LOGqueue, &log_entry, 0 );
+				break;
+
+			case 'i':													// Send a 'status' TLM request to CubeSense
+				// Construct a buffer containing 'status' TLM request
+				txBuffer[0] = 0x80;		// Telemetry request id for status
+				txBufferSize = 1;
+				rxBufferSize = 6;		// 6 Bytes will be received after this request
+
+				// Send a 'status' TLM request to CubeSense
+				BSP_I2C_masterTX (BSP_I2C_SYS, 0x20, bspI2cWriteRead, txBuffer, txBufferSize, rxBuffer, rxBufferSize);
+
+				TLMreturn_len = sprintf((char*)TLMreturn,"%d \n%d \n%d \n%d \n%d \n%d \n", (int)rxBuffer[0],
+						(int)rxBuffer[1], (int)rxBuffer[2], (int)rxBuffer[3], (int)rxBuffer[4], (int)rxBuffer[5]);
+
+				BSP_UART_txBuffer(BSP_UART_DEBUG,(uint8_t*)TLMreturn,TLMreturn_len,true);
+
+				printString("status request completed\n");
+				break;
+
+			case 'I':
+				// Construct a buffer containing 'status' TLM request
+				txBuffer[0] = 0x81;		// Telemetry request id for status
+				txBufferSize = 1;
+				rxBufferSize = 8;		// 6 Bytes will be received after this request
+
+				// Send a 'status' TLM request to CubeSense
+				BSP_I2C_masterTX (BSP_I2C_SYS, 0x20, bspI2cWriteRead, txBuffer, txBufferSize, rxBuffer, rxBufferSize);
+
+				TLMreturn_len = sprintf((char*)TLMreturn,"%d \n%d \n%d \n%d \n%d \n%d \n", (int)rxBuffer[0],
+						(int)rxBuffer[1], (int)rxBuffer[2], (int)rxBuffer[3], (int)rxBuffer[4], (int)rxBuffer[5], (int)rxBuffer[6], (int)rxBuffer[7]);
+
+				BSP_UART_txBuffer(BSP_UART_DEBUG,(uint8_t*)TLMreturn,TLMreturn_len,true);
+
+				printString("comm status request completed\n");
+				break;
+
+			case 'p':
+				BSP_ADC_update(1);
+
+					debugLen = sprintf((char*)debugStr,"\n\nChannel 0 (mV): %d\nChannel 1 (mV): %d\nChannel 2 (mV): %d\nChannel 3 (mV): %d\nCelcius (C): %.2f",
+							BSP_ADC_getData(CHANNEL0),BSP_ADC_getData(CHANNEL1),
+							BSP_ADC_getData(CHANNEL2),BSP_ADC_getData(CHANNEL3),
+							BSP_ADC_temp2Float(BSP_ADC_getData(TEMPERATURE)));
+					BSP_UART_txBuffer(BSP_UART_DEBUG,(uint8_t*)debugStr,debugLen,true);
 				break;
 
 			case 'e':													// Generate a error log

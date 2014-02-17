@@ -1,0 +1,847 @@
+/***************************************************************************//**
+ * @file	fsw_filesystem.c
+ * @brief	FSW File system interface source file.
+ *
+ * This file acts as the module for command and data handling. It contains task handler
+ * definitions, initialization functions, macros, etc to do with C&DH processes.
+ * @author	Andre Heunis
+ * @date	26/08/2013
+ *******************************************************************************
+ * @section License
+ * <b>(C) Copyright 2021 ESL , http://http://www.esl.sun.ac.za/</b>
+ *******************************************************************************
+ *
+ * This source code is the property of the ESL. The source and compiled code may
+ * only be used on the CubeComputer.
+ *
+ * This copyright notice may not be removed from the source code nor changed.
+ *
+ * DISCLAIMER OF WARRANTY/LIMITATION OF REMEDIES: ESL has no obligation to
+ * support this Software. ESL is providing the Software "AS IS", with no express
+ * or implied warranties of any kind, including, but not limited to, any implied
+ * warranties of merchantability or fitness for any particular purpose or
+ * warranties against infringement of any proprietary rights of a third party.
+ *
+ * ESL will not be liable for any consequential, incidental, or special damages,
+ * or any other relief, or for any claim by any third party, arising from your
+ * use of this Software.
+ *
+ ******************************************************************************/
+
+#include "fsw_filesystem.h"
+
+#define FS_Qlen	6
+
+/// Definitions for FSW_COMM_HEALTH masks.
+#define ERR_MODULEINIT		0x01		///< Module initialization error.
+#define ERR_CMDINV			0x02		///< Invalid command received.
+#define ERR_SDNOINIT		0x04		///< SD-card couldn't be initialized
+#define ERR_SDNODISK		0x08		///< No medium in the drive
+#define ERR_SDPROT			0x10		///< SD-card is write protected
+#define ERR_NOF32			0x20		///< Could not intialize fatfs. No micro-SD with FAT32 is present.
+#define ERR_
+
+
+/***************************************************************************//**
+ * @addtogroup FSW_Library
+ * @brief Flight Sofware (<b>FSW</b>) Module Library for CubeComputer.
+ * @{
+ ******************************************************************************/
+
+/***************************************************************************//**
+ * @addtogroup Filesystem
+ * @brief API for the filesystem interface module.
+ * @{
+ ******************************************************************************/
+
+static uint8_t FSW_FS_MSV = 0;		///< Health status byte for C&DH module
+static uint8_t FSW_FS_mode = 0;
+
+// FAT file system variables
+FIL File_object;						///< File object
+FATFS Fatfs;							///< File system object
+uint8_t Reset_signature;				///< Indicates cause of the previous reset
+FRESULT func_result;					///< Used to store return value of open, seek, read, and write functions
+DSTATUS result_sdCard;					///< Used to store return value of disk functions (stores micro-sd status)
+UINT bytes_read, bytes_written;			///< Current # of bytes read/written during a read/write operation
+int8_t write_buffer[BUFSIZE];			///< Temp buffer for writing to a file
+int8_t read_buffer[BUFSIZE];			///< Temp buffer for reading from a file
+DWORD index_errlog = 0;					///< Position in error log file to write to
+DWORD index_cmdlog = 0;					///< Position in command log file to write to
+DWORD index_wodlog = 0;					///< Position in WOD log file to write to
+char err_logPath[30] = {0};				///< Name of the current log file. need separate ones for different logs
+char cmd_logPath[30] = {0};				///< Name of the current log file. need separate ones for different logs
+
+int16_t numBytestoWrite;					///< Number of bytes to write
+static uint8_t cmdString[] 	= "CMD:   ";	///< First part of a CMD log entry
+static uint8_t errString[] 	= "ERROR: ";	///< First part of an error log entry
+static uint8_t WODString[] 	= "WOD:   ";	///< First part of an error log entry
+
+static uint8_t module_strings[9][9] = {{"Source: "},{"ADCS    "},{"CDH     "},{"COMM    "},{"FS      "},{"HANDH   "},{"MODES   "},{"PAYLOAD "},{"POWER   "}};
+
+
+static void FSW_FS_reportHealthStatus( void );					///< Reports the subsystems mode and MSV
+static void FSW_FS_modeChange( uint8_t newMode );				///< Changes the module's mode and runs any associated procedures
+
+static void FATFS_Init( void );
+static void create_logEntry( int8_t *write_buffer, int16_t numBytestoWrite, DWORD *index_errlog );
+static void log_ERROR( FS_LogEntry_TypeDef logEntry );
+static void log_WOD( FS_LogEntry_TypeDef logEntry );
+static void log_CMD( FS_LogEntry_TypeDef logEntry );
+static void read_test( void ); 									// FOR TESTING LOGGING
+
+static void FSW_FS_CMDmanager( void *pvParameters );
+static void FSW_FS_LOGmanager( void *pvParameters );
+
+// FUNCTIONS *************************************************************************************************************************
+
+/***************************************************************************//**
+ * @author Andre Heunis
+ * @date   05/09/2013
+ *
+ * This function initializes the FSW's file system interface module.
+ ******************************************************************************/
+void FSW_FS_Init( void )
+{
+	FSW_FS_CMDqueue = xQueueCreate( FS_Qlen, sizeof( CDH_CMD_TypeDef ) );
+	FSW_FS_LOGqueue = xQueueCreate( FS_Qlen, sizeof( FS_LogEntry_TypeDef ) );
+
+	if( FSW_FS_CMDqueue != NULL && FSW_FS_LOGqueue != NULL )
+	{
+		xTaskCreate( FSW_FS_CMDmanager, "FS_CMDmanager", 240, NULL, 1, NULL );
+		xTaskCreate( FSW_FS_LOGmanager, "FS_LOGmanager", 240, NULL, 1, NULL );
+
+		FSW_FS_MSV = 0;
+		FSW_FS_mode = FSW_MODE_ON;
+
+		// Have a return value then check for errors and modify the MSV
+		FATFS_Init();
+	}
+	else
+	{
+		FSW_FS_MSV &= ERR_MODULEINIT;
+	}
+}
+
+/***************************************************************************//**
+ * @author Andre Heunis
+ * @date   07/10/2013
+ *
+ * This function initializes a FAT file system on the microSD card. The file
+ * for logging OBC events is also created.
+ * TODO: make this function return an error code if there is an error
+ * initializing the FS. This returned code can then be used to set the ERR_MODULEINIT
+ * flag for the module or a separate one
+ *******************************************************************************/
+static void FATFS_Init( void )
+{
+	FRESULT fresult;
+	// ****************************
+	// 1. DETECT AND INIT SD-CARD *
+	// ****************************
+	MICROSD_Init();                     // Initialize MicroSD driver
+
+	result_sdCard = disk_initialize(0); // Check micro-SD card status
+
+	switch(result_sdCard)
+	{
+	case STA_NOINIT:                    // Drive not initialized
+		FSW_FS_mode = FSW_MODE_OFF;
+		// set relevant flag in msv
+		break;
+	case STA_NODISK:                    // No medium in the drive
+		FSW_FS_mode = FSW_MODE_OFF;
+		// set relevant flag in msv
+		break;
+	case STA_PROTECT:                   // Write protected
+		FSW_FS_mode = FSW_MODE_OFF;
+		// set relevant flag in msv
+		break;
+	default:
+		break;
+	}
+
+	if (!result_sdCard)
+	{
+		printString( "SD-card was initialized\n" );
+	}
+
+	// ***************
+	// 2. INIT FATFS *
+	// ***************
+	if (f_mount(0, &Fatfs) != FR_OK)
+	{
+#ifndef HIL_sim
+		FSW_FS_MSV &= ERR_NOF32;
+		printString( "ERR: No micro-SD with FAT32 is present!\n" );
+#endif
+	}
+
+
+	// ****************************
+	// 3. DETECT RESET CONDITIONS *
+	// ****************************
+	// Check for log control block
+	if( f_stat("/LOGCNTRLBLOCK.txt", NULL) != FR_OK)
+	{
+		// Initial power on reset or corrupt data. Set flag to create directories, log files and control block file normally as with initial power on
+	}
+	else
+	{
+		// Read flags from control block structure for use
+		// Signature - Indicates what type of reset the previous reset was
+		// InMonInit - Indicates whether the restart occurred during FS initialization
+		// InMemWash - Indicates whether the restart occurred during a memory wash of the file system. Define
+		//				how memory washing works before implementing this
+
+	}
+
+
+	// ***************************
+	// 4. INIT FILES AND FOLDERS *
+	// ***************************
+	// Modify this initialisation  according to flags read in section 3
+
+	if( Reset_signature == 0 )
+	{
+		// Initial power on reset
+		// Normal directory and file initialization
+	}
+	else if( Reset_signature == 1 )
+	{
+		// OBC watchdog/TCMD reset
+		// Directories and files already exist. Either create new files or retrieve an index from the control block to continue from
+	}
+	else if( Reset_signature == 2 )
+	{
+		// Start up after error correction
+	}
+
+/*
+	// Check for existing files
+	if( f_stat("/ERRORLOG", NULL) == FR_OK && f_stat("/CMDLOG", NULL) == FR_OK && f_stat("/WODLOG", NULL) == FR_OK  )
+	{
+		// After OBC reset, log files may exist with names that could be replicated. Move these to a directory to hold old files
+		// Either move all log files away and use new ones or retrieve file pointer to continue logging
+		// For now, remove old directories
+		fresult =  f_unlink ( "/ERRORLOG" );
+		if( fresult == FR_OK )
+			printString("okay\n");
+		else if( fresult == FR_DENIED )
+			printString("denied\n");
+		else if( fresult == FR_LOCKED )
+			printString("locked\n");
+
+		f_unlink ( "/CMDLOG" );
+		f_unlink ( "/WODLOG" );
+
+		printString("Old dirs removed\n");
+	}
+	else if ( f_stat("/ERRORLOG", NULL) == FR_NO_FILE )
+	{
+		printString("No dirs\n");
+	}
+*/
+	// Create new directories
+
+	f_mkdir("ERRORLOG");
+	f_mkdir("CMDLOG");
+	f_mkdir("WODLOG");
+	//f_mkdir("PAYLOAD");
+
+	FSW_FS_mode = FSW_MODE_ON;
+}
+
+/***************************************************************************//**
+ * @author Andre Heunis
+ * @date   05/09/2013
+ *
+ * This function reports the health status of the FS module to the health and
+ * housekeeping module by sending the health status to the housekeeping module's
+ * data queue.
+ ******************************************************************************/
+
+static void FSW_FS_reportHealthStatus( void )
+{
+	addToBuffer_uint8 ( &(uartTxBuffer[0]), FSW_FS_mode );
+	addToBuffer_uint8 ( &(uartTxBuffer[1]), FSW_FS_MSV );
+
+	// Transmit the 2 values
+	if( !BSP_UART_txInProgress() )
+	{
+		BSP_UART_txBuffer(BSP_UART_DEBUG, uartTxBuffer, 2, true);
+	}
+	else
+	{
+		while(1);
+	}
+}
+
+/***************************************************************************//**
+ * @author Andre Heunis
+ * @date   8/11/2013
+ *
+ * This function runs any procedures that might be associated with changing
+ * the mode
+ ******************************************************************************/
+
+static void FSW_FS_modeChange( uint8_t newMode )
+{
+	FSW_FS_mode = newMode;
+
+	// Run required procedures to complete the mode change
+	switch( newMode )
+	{
+	case FSW_MODE_OFF:
+
+		break;
+
+	case FSW_MODE_ON:
+
+		break;
+
+	case FSW_MODE_SAFE:
+
+		break;
+
+	case FSW_MODE_ERP:
+
+		break;
+	}
+}
+
+/***************************************************************************//**
+ * @author Andre Heunis
+ * @date   07/10/2013
+ *
+ * This function is called whenever a command is executed in order to add a
+ * log entry of the command to a log file
+ * @param[in] subsystem
+ 				Subsystem/process in which the CMD was executed
+ * @param[in] CMD_id
+ *				I.D. of the command that needs to be logged
+ * @param[in] exe_time
+ *				Time that the command was executed
+ ******************************************************************************/
+// TODO: Keeping this function in case the error messages are needed
+/*
+static void create_logEntry( int8_t *write_buffer, int16_t numBytestoWrite, DWORD *index_errlog )
+{
+	// Step 4:
+	// Open the file for write
+	if( logEntry.type == LOG_ERROR )
+		func_result = f_open(&File_object, ERRLOG_FILENAME, FA_WRITE);
+	else if( logEntry.type == LOG_WOD )
+		func_result = f_open(&File_object, WODLOG_FILENAME, FA_WRITE);
+	else if( logEntry.type == LOG_CMD )
+		func_result = f_open(&File_object, CMDLOG_FILENAME, FA_WRITE);
+
+	if (func_result != FR_OK)
+	{
+		// If file does not exist create it
+		if( logEntry.type == LOG_ERROR )
+			func_result = f_open(&File_object, ERRLOG_FILENAME, FA_CREATE_ALWAYS | FA_WRITE );
+		else if( logEntry.type == LOG_WOD )
+			func_result = f_open(&File_object, WODLOG_FILENAME, FA_CREATE_ALWAYS | FA_WRITE );
+		else if( logEntry.type == LOG_CMD )
+			func_result = f_open(&File_object, CMDLOG_FILENAME, FA_CREATE_ALWAYS | FA_WRITE );
+
+		if (func_result != FR_OK)
+		{
+			// Error. Cannot create the file
+			if(VERBOSE)
+				debugLen = sprintf((char*)debugStr,"\n\nMicroSD Test Unsuccessful: Error 2");
+			else
+				debugLen = sprintf((char*)debugStr,"0;");
+
+			BSP_UART_txBuffer(BSP_UART_DEBUG,(uint8_t*)debugStr,debugLen,true);
+		}
+	}
+
+	// Step 5:
+	// Increment the File pointer
+	f_lseek(&File_object, point_in_file);
+	if (func_result != FR_OK)
+	{
+		// Error. Cannot set the file write pointer
+		if(VERBOSE)
+			debugLen = sprintf((char*)debugStr,"\n\nMicroSD Test Unsuccessful: Error 3");
+		else
+			debugLen = sprintf((char*)debugStr,"0;");
+
+		BSP_UART_txBuffer(BSP_UART_DEBUG,(uint8_t*)debugStr,debugLen,true);
+	}
+
+	// Step 6
+	// Write a buffer to file
+	func_result = f_write(&File_object, write_buffer, numBytestoWrite, &bytes_written);
+
+	if ((func_result != FR_OK) || (numBytestoWrite != bytes_written))
+	{
+		// Error. Cannot write the file
+		if(VERBOSE)
+			debugLen = sprintf((char*)debugStr,"\n\nMicroSD Test Unsuccessful: Error 4");
+		else
+			debugLen = sprintf((char*)debugStr,"0;");
+
+		BSP_UART_txBuffer(BSP_UART_DEBUG,(uint8_t*)debugStr,debugLen,true);
+	}
+	else
+	{
+		// Increment the file pointer if a buffer was written
+		point_in_file += numBytestoWrite;
+	}
+
+	// Step7
+	// Close the file
+	f_close(&File_object);
+	if (func_result != FR_OK)
+	{
+		// Error. Cannot close the file
+		if(VERBOSE)
+			debugLen = sprintf((char*)debugStr,"\n\nMicroSD Test Unsuccessful: Error 5");
+		else
+			debugLen = sprintf((char*)debugStr,"0;");
+
+		BSP_UART_txBuffer(BSP_UART_DEBUG,(uint8_t*)debugStr,debugLen,true);
+	}
+
+	printString("log entered\n");
+	// read the file to test if write was successful
+	//read_test();
+
+}
+ */
+/***************************************************************************//**
+ * @author Andre Heunis
+ * @date   07/10/2013
+ *
+ * Format error log data and place it in the error log
+ * e.g:ERROR <subsytem> <error_id> <time_detected>
+ ******************************************************************************/
+
+static void log_ERROR( FS_LogEntry_TypeDef logEntry )
+{
+	bytes_written = 0;							// Reset number of bytes written
+	int16_t i = 0;								// Buffer copy counter
+	char temp_id[4] = {0};						// Temporarily stores string conversion of error id
+
+	// Do conversion to human readable time
+	char buf[20];								// 20 characters required for time. 23 for extra log indicator in file name e.g. CMD<date>
+	struct tm ts;
+	time_t time = logEntry.exe_time;
+	ts = *gmtime(&time);
+	strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", &ts);
+
+	// Create buffer to write to log file
+	// Indicate an error log entry
+	strcpy( write_buffer, errString );
+	i += sizeof(errString);
+
+	// Indicate the source of the error
+	strcpy( &write_buffer[i], &module_strings[0] );
+	i += sizeof(module_strings[0]);
+	strcpy( &write_buffer[i], &module_strings[logEntry.source] );
+	i += sizeof(module_strings[logEntry.source]);
+
+	// Indicate the id of the particular error
+	sprintf(temp_id, "%d\t", (int)(logEntry.id));
+	strcpy( &write_buffer[i], temp_id );
+	i += sizeof( temp_id );
+
+	// Write the OBC time to log entry
+	strcpy( &write_buffer[i], buf );
+	i += sizeof(buf);
+
+	write_buffer[i] = '\r';
+	write_buffer[i+1] = '\n';
+	numBytestoWrite = i+2;
+
+	// Entry created, now write to the correct file
+	f_chdir("../ERRORLOG");
+
+	// Open the file for write
+	func_result = f_open(&File_object, err_logPath, FA_WRITE);
+
+	// If no log file exists, create a new one
+	if (func_result != FR_OK)
+	{
+		// Change the file name
+		time_t time = OBC_time;
+		ts = *gmtime(&time);
+		strftime(err_logPath, sizeof(err_logPath), "%d%H%M%S.txt", &ts);						//Adding year or month or any text in front of day causes invalid filename error
+
+		func_result = f_open(&File_object, err_logPath, FA_CREATE_ALWAYS | FA_WRITE );
+#ifndef HIL_sim
+		if( func_result == FR_INVALID_NAME )
+			printString( "invalidname\n" );
+		else
+			printString( "newlog\n" );
+#endif
+	}
+
+	//Check if current log file is to large (more than 1KB for now)(f_size). Start a new file if it is
+	if( f_size( &File_object ) >= MAX_LOG_SIZE)
+	{
+		// Close the large file
+		f_close(&File_object);
+
+		// Change the file name
+		time_t time = OBC_time;
+		ts = *gmtime(&time);
+		strftime(err_logPath, sizeof(err_logPath), "%d%H%M%S.txt", &ts);
+
+		// Create a new file
+		func_result = f_open(&File_object, err_logPath, FA_CREATE_ALWAYS | FA_WRITE );
+		index_errlog = 0;
+	}
+
+	// Set the file pointer
+	f_lseek(&File_object, index_errlog);
+
+	// Write a buffer to file
+	func_result = f_write(&File_object, write_buffer, numBytestoWrite, &bytes_written);
+
+	// Increment the file pointer if a buffer was written
+	index_errlog += numBytestoWrite;
+
+	// Close the file
+	f_close(&File_object);
+}
+
+/***************************************************************************//**
+ * @author Andre Heunis
+ * @date   07/10/2013
+ *
+ * Format whole orbit data and place it in the WOD log
+ * e.g:WOD at <time_of_readings>
+ * 		-battery voltage/temp etc.
+ ******************************************************************************/
+
+static void log_WOD( FS_LogEntry_TypeDef logEntry )
+{
+	bytes_written = 0;			// Reset number of bytes written
+	int16_t i = 0;				// Buffer copy counter
+	char temp_id[4] = {0};		// Temporarily stores string conversion of WOD id
+
+	// Do conversion to human readable time
+	char buf[20];
+	struct tm ts;
+	time_t time = logEntry.exe_time;
+	ts = *gmtime(&time);
+	strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", &ts);
+
+	// Create buffer to write to log file
+	// Indicate a WOD log entry
+	strcpy( write_buffer, WODString );
+	i += sizeof(WODString);
+
+	// FORMAT CORRECTLY FOR WOD
+	// Indicate the source of the WOD
+	/*
+	strcpy( &write_buffer[i], SOURCEstring );
+	i += sizeof(SOURCEstring);
+	strcpy( &write_buffer[i], ADCSstring );
+	i += sizeof(ADCSstring);
+	 */
+	/*
+	// Indicate the id of the particular WOD
+	sprintf(temp_id, "%d\t", (int)(logEntry.id));
+	strcpy( &write_buffer[i], temp_id );
+	i += sizeof( temp_id );
+	 */
+	/*
+	// Write the OBC time to log entry
+	strcpy( &write_buffer[i], buf );
+	i += sizeof(buf);
+	 */
+	/*
+	write_buffer[i] = '\r';
+	write_buffer[i+1] = '\n';
+	numBytestoWrite = i+2;
+
+	// Entry created, now write to the correct file
+	f_chdir("../WODLOG");
+
+	// Open the file for write
+	func_result = f_open(&File_object, ERRLOG_FILENAME, FA_WRITE);
+
+	if (func_result != FR_OK)
+	{
+		func_result = f_open(&File_object, ERRLOG_FILENAME, FA_CREATE_ALWAYS | FA_WRITE );
+	}
+
+	// Set the file pointer
+	f_lseek(&File_object, index_errlog);
+
+	// Write a buffer to file
+	func_result = f_write(&File_object, write_buffer, numBytestoWrite, &bytes_written);
+
+	// Increment the file pointer if a buffer was written
+	index_errlog += numBytestoWrite;
+
+	// Close the file
+	f_close(&File_object);
+
+	printString("Error logged\n");
+	 */
+}
+
+/***************************************************************************//**
+ * @author Andre Heunis
+ * @date   07/10/2013
+ *
+ * Format CMD log data and place it in the CMD log
+ * e.g:CMD <subsytem> <cmd_id> <time_executed>
+ ******************************************************************************/
+
+static void log_CMD( FS_LogEntry_TypeDef logEntry )
+{
+	bytes_written = 0;			// Reset number of bytes written
+	int16_t i = 0;				// Buffer copy counter
+	char temp_id[4] = {0};		// Temporarily stores string conversion of CMD id
+
+	// Do conversion to human readable time
+	char buf[20];
+	struct tm ts;
+	time_t time = logEntry.exe_time;
+	ts = *gmtime(&time);
+	strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", &ts);
+
+	// Create buffer to write to log file
+	// Indicate an error log entry
+	strcpy( write_buffer, cmdString );
+	i += sizeof(cmdString);
+
+	// Indicate the source of the CMD
+	strcpy( &write_buffer[i], &module_strings[0] );
+	i += sizeof( module_strings[0] );
+	strcpy( &write_buffer[i], &module_strings[logEntry.source] );
+	i += sizeof(module_strings[logEntry.source]);
+
+	// Indicate the id of the particular CMD
+	sprintf(temp_id, "%d\t", (int)(logEntry.id));
+	strcpy( &write_buffer[i], temp_id );
+	i += sizeof( temp_id );
+
+	// Write the OBC time to log entry
+	strcpy( &write_buffer[i], buf );
+	i += sizeof(buf);
+
+	write_buffer[i] = '\r';
+	write_buffer[i+1] = '\n';
+	numBytestoWrite = i+2;
+
+	// Entry created, now write to the correct file
+	f_chdir("../CMDLOG");
+
+	// Open the file for write
+	func_result = f_open(&File_object, cmd_logPath, FA_WRITE);
+
+	// If no log file exists, create a new one
+	if (func_result != FR_OK)
+	{
+		// Change the file name
+		time_t time = OBC_time;
+		ts = *gmtime(&time);
+		strftime(cmd_logPath, sizeof(cmd_logPath), "%d%H%M%S.txt", &ts);						//Adding year or month or any text in front of day causes invalid filename error
+
+		func_result = f_open(&File_object, cmd_logPath, FA_CREATE_ALWAYS | FA_WRITE );
+#ifndef HIL_sim
+		if( func_result == FR_INVALID_NAME )
+			printString( "invalidname\n" );
+		else
+			printString( "new log file\n" );
+#endif
+	}
+
+	//Check if current log file is to large (more than 2KB for now)(f_size). Start a new file if it is
+	if( f_size( &File_object ) >= MAX_LOG_SIZE) 												// <- File probably needs to be opened into this file object before f_size will work
+	{
+		// Close the large file
+		f_close(&File_object);
+
+		// Change the file name
+		time_t time = OBC_time;
+		ts = *gmtime(&time);
+		strftime(cmd_logPath, sizeof(cmd_logPath), "%d%H%M%S.txt", &ts);
+
+		// Create a new file
+		func_result = f_open(&File_object, cmd_logPath, FA_CREATE_ALWAYS | FA_WRITE );
+		index_cmdlog = 0;
+	}
+
+	// Set the file pointer
+	f_lseek(&File_object, index_cmdlog);
+
+	// Write a buffer to file
+	func_result = f_write(&File_object, write_buffer, numBytestoWrite, &bytes_written);
+
+	// Increment the file pointer if a buffer was written
+	index_cmdlog += numBytestoWrite;
+
+	// Close the file
+	f_close(&File_object);
+	printString( "log created\n" );
+}
+
+/***************************************************************************//**
+ * @author Andre Heunis
+ * @date   07/10/2013
+ *
+ * Test function. Read from the log file.
+ ******************************************************************************/
+/*
+static void read_test( void )
+{
+	bytes_read = 0;
+
+	// Step8
+	// Open the file for read
+	//func_result = f_open(&File_object, OBCLOG_FILENAME,  FA_READ);
+	if (func_result != FR_OK)
+	{
+		// Error. Cannot create the file
+		if(VERBOSE)
+			debugLen = sprintf((char*)debugStr,"\n\nMicroSD Test Unsuccessful: Error 6");
+		else
+			debugLen = sprintf((char*)debugStr,"0;");
+
+		BSP_UART_txBuffer(BSP_UART_DEBUG,(uint8_t*)debugStr,debugLen,true);
+	}
+
+	// Step9
+	// Set the file read pointer to first location
+	//func_result = f_lseek(&File_object, 0);
+	// Set the file read pointer to the start of the last log entry
+	func_result = f_lseek(&File_object, point_in_file - numBytestoWrite);
+	if (func_result != FR_OK)
+	{
+		// Error. Cannot set the file pointer
+		if(VERBOSE)
+			debugLen = sprintf((char*)debugStr,"\n\nMicroSD Test Unsuccessful: Error 7");
+		else
+			debugLen = sprintf((char*)debugStr,"0;");
+
+		BSP_UART_txBuffer(BSP_UART_DEBUG,(uint8_t*)debugStr,debugLen,true);
+	}
+
+	// Step10
+	// Read some data from file
+	func_result = f_read(&File_object, read_buffer, numBytestoWrite, &bytes_read);
+	if ((func_result != FR_OK) || (numBytestoWrite != bytes_read))
+	{
+		// Error. Cannot read the file
+		if(VERBOSE)
+			debugLen = sprintf((char*)debugStr,"\n\nMicroSD Test Unsuccessful: Error 8");
+		else
+			debugLen = sprintf((char*)debugStr,"0;");
+
+		BSP_UART_txBuffer(BSP_UART_DEBUG,(uint8_t*)debugStr,debugLen,true);
+	}
+
+	// Print out the data that was read from the file
+	BSP_UART_txBuffer(BSP_UART_DEBUG, (uint8_t*)read_buffer, 26, true);
+
+	// Step11
+	// Close the file
+	f_close(&File_object);
+	if (func_result != FR_OK)
+	{
+		// Error. Cannot close the file
+		if(VERBOSE)
+			debugLen = sprintf((char*)debugStr,"\n\nMicroSD Test Unsuccessful: Error 9");
+		else
+			debugLen = sprintf((char*)debugStr,"0;");
+
+		BSP_UART_txBuffer(BSP_UART_DEBUG,(uint8_t*)debugStr,debugLen,true);
+	}
+}
+ */
+// TASKS ************************************************************************************************************************************************************
+
+/***************************************************************************//**
+ * @author Andre Heunis
+ * @date   07/10/2013
+ *
+ * This task manages the FS subsystem i.e modes, error procedures, etc. Logging
+ * and file system activities are handled by the FSW_FS_LOGmanager task.
+ ******************************************************************************/
+
+static void FSW_FS_CMDmanager( void *pvParameters )
+{
+	portBASE_TYPE Status;
+	CDH_CMD_TypeDef ReceivedCMD;
+
+	while(1)
+	{
+		Status = xQueueReceive( FSW_FS_CMDqueue, &ReceivedCMD, portMAX_DELAY );
+
+		if(Status == pdPASS)
+		{
+			switch(ReceivedCMD.id)
+			{
+			case 0x01:
+				FSW_FS_reportHealthStatus();
+				break;
+
+			case 0x02:
+				FSW_FS_modeChange((uint8_t)ReceivedCMD.params[0] );
+				break;
+
+			case 0x03:
+				// Add a log struct to the logging queue to queue an event.
+				break;
+
+			default:
+				FSW_FS_MSV &= ERR_CMDINV;
+				break;
+			}
+		}
+	}
+
+	// Delete the task if it ever breaks out of the loop above
+	vTaskDelete( NULL );
+}
+
+/***************************************************************************//**
+ * @author Andre Heunis
+ * @date   07/10/2013
+ *
+ * Test function. Read from the log file.
+ ******************************************************************************/
+
+static void FSW_FS_LOGmanager( void *pvParameters )
+{
+	portBASE_TYPE Status;
+	FS_LogEntry_TypeDef LogEntry;
+
+	while(1)
+	{
+		Status = xQueueReceive( FSW_FS_LOGqueue, &LogEntry, portMAX_DELAY );
+
+		if( Status == pdPASS && FSW_FS_mode == 1 )
+		{
+			// log the received log entry
+			// Only log if the module is fully operational.
+			if( FSW_FS_mode == 1 )
+			{
+				if( LogEntry.type == LOG_ERROR )
+					log_ERROR( LogEntry );
+				else if( LogEntry.type == LOG_WOD )
+					log_WOD( LogEntry );
+				else if( LogEntry.type == LOG_CMD )
+					log_CMD( LogEntry );
+			}
+			else
+			{
+				// call the error handling function with "could not log" id
+				// disk needs to be periodically checked with disk_status() to update module mode
+			}
+		}
+	}
+
+	// Delete the task if it ever breaks out of the loop above
+	vTaskDelete( NULL );
+}
+

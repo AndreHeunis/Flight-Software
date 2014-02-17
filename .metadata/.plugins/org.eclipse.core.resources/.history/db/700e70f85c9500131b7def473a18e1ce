@@ -1,0 +1,286 @@
+/***************************************************************************//**
+ * @file	fsw_adcs.c
+ * @brief	FSW ADCS source file
+ *
+ * This header file contains the interface to the ADCS software/hardware
+ * @author	Andre Heunis
+ * @date	26/08/2013
+ *******************************************************************************
+ * @section License
+ * <b>(C) Copyright 2021 ESL , http://http://www.esl.sun.ac.za/</b>
+ *******************************************************************************
+ *
+ * This source code is the property of the ESL. The source and compiled code may
+ * only be used on the CubeComputer.
+ *
+ * This copyright notice may not be removed from the source code nor changed.
+ *
+ * DISCLAIMER OF WARRANTY/LIMITATION OF REMEDIES: ESL has no obligation to
+ * support this Software. ESL is providing the Software "AS IS", with no express
+ * or implied warranties of any kind, including, but not limited to, any implied
+ * warranties of merchantability or fitness for any particular purpose or
+ * warranties against infringement of any proprietary rights of a third party.
+ *
+ * ESL will not be liable for any consequential, incidental, or special damages,
+ * or any other relief, or for any claim by any third party, arising from your
+ * use of this Software.
+ *
+ ******************************************************************************/
+
+#include "fsw_adcs.h"
+
+/***************************************************************************//**
+ * @addtogroup FSW_Library
+ * @brief Flight Software (<b>FSW</b>) Module Library for CubeComputer.
+ * @{
+ ******************************************************************************/
+
+/***************************************************************************//**
+ * @addtogroup ADCS
+ * @brief API for the ADCS interface module.
+ * @{
+ ******************************************************************************/
+
+#define CMD_Qlen	6								///< Length for this modules command queue.
+
+/// Definitions for FSW_ADCS_HEALTH masks
+#define ERROR_INIT 		0x01						///< Module initialization error.
+#define ERROR_CMDINV	0x02						///< Invalid command received.
+
+static uint8_t FSW_ADCS_mode = 0;					///< Current mode for ADCS module.			for a mode 0=off, 1=safe, 2=on, 4=ERP
+static uint8_t FSW_ADCS_MSV = 0;					///< Module Status Vector for ADCS module.
+
+static void FSW_ADCS_reportHealthStatus( void );	///< Reports the subsystem's mode and MSV
+static void FSW_ADCS_modeChange( uint8_t newMode );	///< Changes the mode and runs associated procedures
+static void FSW_ADCS_readTelemetry( void );			///< Debugging function.
+static void FSW_ADCS_runAlgorithm( void );			///< Debugging function.
+
+static void FSW_ADCS_manager( void *pvParameters );	///< Processes and executes commands on the ADCS command queue.
+static void FSW_ADCS_ADCSexe( void *pvParameters );	///< Runs ADCS libraries each second according to what mode the satellite is in.
+
+// FUNCTIONS *************************************************************************************************************************
+
+/***************************************************************************//**
+ * @author Andre Heunis
+ * @date   05/09/2013
+ *
+ * This function initializes the FSW's ADCS interface module.
+ ******************************************************************************/
+
+void FSW_ADCS_Init( void )
+{
+	FSW_ADCS_CMDqueue = xQueueCreate( CMD_Qlen, sizeof( CDH_CMD_TypeDef ) );
+
+	if( FSW_ADCS_CMDqueue == NULL )
+	{
+		// If the queue could not be created, set the reinit flag for the module.
+		FSW_ADCS_MSV &= ERROR_INIT;
+	}
+	else
+	{
+		FSW_ADCS_mode = 1;
+		FSW_ADCS_MSV = 0;
+
+		xTaskCreate( FSW_ADCS_manager, "ADCSmanager", 240, NULL, 1, NULL );
+		xTaskCreate( FSW_ADCS_ADCSexe, "ADCSexe", 240, NULL, 1, NULL );
+	}
+}
+
+/***************************************************************************//**
+ * @author Andre Heunis
+ * @date   05/09/2013
+ *
+ * This function reports the health status of the ADCS module to the health and
+ * housekeeping module by sending the health status to the housekeeping module's
+ * data queue.
+ ******************************************************************************/
+
+static void FSW_ADCS_reportHealthStatus( void )
+{
+	addToBuffer_uint8 ( &(uartTxBuffer[0]), FSW_ADCS_mode );
+	addToBuffer_uint8 ( &(uartTxBuffer[1]), FSW_ADCS_MSV );
+
+	// Transmit the 2 values
+	if( !BSP_UART_txInProgress() )
+	{
+		BSP_UART_txBuffer(BSP_UART_DEBUG, uartTxBuffer, 2, true);
+	}
+	else
+	{
+		while(1);
+	}
+}
+
+/***************************************************************************//**
+ * @author Andre Heunis
+ * @date   8/11/2013
+ *
+ * This function runs any procedures that might be associated with changing
+ * the mode
+ ******************************************************************************/
+
+static void FSW_ADCS_modeChange( uint8_t newMode )
+{
+	FSW_ADCS_mode = newMode;
+
+	switch( newMode )
+	{
+	case FSW_MODE_OFF:
+		// Turn off power to all nonessential hardware
+		// Disable processing of non-essential commands
+	break;
+
+	case FSW_MODE_ON:
+		// Turn on all required hardware
+		// Start tasks to manage ADCS algorithms
+		break;
+
+	case FSW_MODE_SAFE:
+		// Similar to turning off
+		break;
+
+	case FSW_MODE_ERP:
+		// Disable non ERP commands
+		// Evaluate MSV to determine if any ERP procedures should be run
+		break;
+	}
+}
+
+/***************************************************************************//**
+ * @author Andre Heunis
+ * @date   05/09/2013
+ *
+ * Test functions for receiving commands
+ ******************************************************************************/
+
+void FSW_ADCS_readTelemetry( void )
+{
+	printString("ADCS module: Reading Telemetry Data\n");
+}
+
+void FSW_ADCS_runAlgorithm( void )
+{
+	printString("ADCS module: Running ADCS algorithms\n");
+}
+
+// TASKS *****************************************************************************************************************************
+
+/***************************************************************************//**
+ * @author Andre Heunis
+ * @date   05/09/2013
+ *
+ * Subsystem manager for ADCS interface module. Processes and executes commands
+ * on the ADCS command queue.
+ ******************************************************************************/
+
+static void FSW_ADCS_manager( void *pvParameters )
+{
+	portBASE_TYPE Status;
+	CDH_CMD_TypeDef ReceivedCMD;
+	uint8_t I2Cbuffer[64];				///< Buffer for data to be sent over I2C bus
+	int32_t I2Clen = 0;					///< Length of data to be sent over I2C bus
+
+	while(1)
+	{
+		Status = xQueueReceive( FSW_ADCS_CMDqueue, &ReceivedCMD, portMAX_DELAY );
+
+		if(Status == pdPASS)
+		{
+			switch(ReceivedCMD.id)
+			{
+			case 0x01:													// Transmit the module's mode and MSV over UART
+				FSW_ADCS_reportHealthStatus();
+				break;
+
+			case 0x02:													// Change the modules mode and run any associated procedures
+				FSW_ADCS_modeChange( (uint8_t)ReceivedCMD.params[0] );
+				break;
+
+			case 0x03:													// Test CMD
+				FSW_ADCS_readTelemetry();
+				break;
+
+			case 0x04:													// Test CMD
+				FSW_ADCS_runAlgorithm();
+				break;
+
+			case 0x05:													// Send a status TLM request to CubeSense
+				// Add tlm id to buffer and retrieve length of TLM to be received
+				CUBESENSE_createTelemetryRequest(I2Cbuffer, CubeSenseTlmIdIdentification);
+
+				// Construct data (TLM buffer and length) to send to the I2C manager. Will need to include I2C write address of CubeSense somehow
+
+
+				// Send buffer and length to i2c manager to be transmitted to CubeSense
+				xQueueSendToBack( FSW_ADCS_CMDqueue, &ReceivedCMD, 0 );
+
+				// Receive TLM data back here?
+
+				// Update TLM structure?
+				int8_t CUBESENSE_updateTlmIdentification(CUBESENSE_TlmIdentification_TypeDef* identification, uint8_t* tlmBuffer);
+				break;
+
+			case 0x06:													// Send a comm status TLM request to CubeSense
+
+				//int8_t CUBESENSE_updateTlmCommsStatus(CUBESENSE_TlmCommsStatus_TypeDef* commsStatus, uint8_t* tlmBuffer);
+				//int8_t CUBESENSE_updateTlmCommsStatus(CUBESENSE_TlmCommsStatus_TypeDef* commsStatus, uint8_t* tlmBuffer);
+
+				break;
+
+			default:
+				FSW_ADCS_MSV &= ERROR_CMDINV;
+				while(1);
+				break;
+			}
+		}
+	}
+
+	// Delete the task if it ever breaks out of the loop above
+	vTaskDelete( NULL );
+}
+
+/***************************************************************************//**
+ * @author Andre Heunis
+ * @date   17/10/2013
+ *
+ * Runs ADCS libraries periodically each second according to what mode the
+ * satellite is in.
+ ******************************************************************************/
+
+static void FSW_ADCS_ADCSexe( void *pvParameters )
+{
+	while(1)
+	{
+		switch( current_state )
+		{
+		case DETUMBLING_MODE:
+			// Detumble the satellite, read sensors continuously to see when satellite is detumbled
+			break;
+
+		case SAFE_MODE:
+			// Point towards nadir
+			break;
+
+		case ERP_MODE:
+			// Point towards sun
+			break;
+
+		case NOMINAL_MODE:
+			// Point towards sun
+			break;
+
+		case LINK_MODE:
+			// Point antenna towards ground station
+			break;
+
+		default:
+			//printString( "unknown state\n" );
+			break;
+		}
+
+		vTaskDelay( 1000/portTICK_RATE_MS );
+	}
+
+	// Delete the task if it ever breaks out of the loop above
+	vTaskDelete( NULL );
+}

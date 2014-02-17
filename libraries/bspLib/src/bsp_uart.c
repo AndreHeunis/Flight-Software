@@ -48,7 +48,7 @@
 
 /** @cond DO_NOT_INCLUDE_WITH_DOXYGEN */
 
-volatile uint8_t debugTxInProgress; // debug uart transmission flag
+volatile uint8_t debugTxInProgress; // debug uart transmission flag. Has to be declared volatile so it can be changed in an interrupt
 
 /***************************************************************************//**
  * @fn void debugTxComplete(unsigned int channel, bool primary, void *user)

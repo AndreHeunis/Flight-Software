@@ -33,8 +33,14 @@
 #define FS_Qlen	6
 
 /// Definitions for FSW_COMM_HEALTH masks.
-#define ERROR_INIT		0x01		///< Module initialization error.
-#define ERROR_CMDINV	0x02		///< Invalid command received.
+#define ERR_MODULEINIT		0x01		///< Module initialization error.
+#define ERR_CMDINV			0x02		///< Invalid command received.
+#define ERR_SDNOINIT		0x04		///< SD-card couldn't be initialized
+#define ERR_SDNODISK		0x08		///< No medium in the drive
+#define ERR_SDPROT			0x10		///< SD-card is write protected
+#define ERR_NOF32			0x20		///< Could not intialize fatfs. No micro-SD with FAT32 is present.
+#define ERR_CORRSIG			0x40		///< Corrupt reset signature detected
+#define	inserterror			0x80
 
 
 /***************************************************************************//**
@@ -55,6 +61,7 @@ static uint8_t FSW_FS_mode = 0;
 // FAT file system variables
 FIL File_object;						///< File object
 FATFS Fatfs;							///< File system object
+uint8_t Reset_signature;				///< Indicates cause of the previous reset
 FRESULT func_result;					///< Used to store return value of open, seek, read, and write functions
 DSTATUS result_sdCard;					///< Used to store return value of disk functions (stores micro-sd status)
 UINT bytes_read, bytes_written;			///< Current # of bytes read/written during a read/write operation
@@ -97,23 +104,23 @@ static void FSW_FS_LOGmanager( void *pvParameters );
  ******************************************************************************/
 void FSW_FS_Init( void )
 {
-
 	FSW_FS_CMDqueue = xQueueCreate( FS_Qlen, sizeof( CDH_CMD_TypeDef ) );
 	FSW_FS_LOGqueue = xQueueCreate( FS_Qlen, sizeof( FS_LogEntry_TypeDef ) );
 
-	if( FSW_FS_CMDqueue != NULL )
+	if( FSW_FS_CMDqueue != NULL && FSW_FS_LOGqueue != NULL )
 	{
 		xTaskCreate( FSW_FS_CMDmanager, "FS_CMDmanager", 240, NULL, 1, NULL );
 		xTaskCreate( FSW_FS_LOGmanager, "FS_LOGmanager", 240, NULL, 1, NULL );
 
 		FSW_FS_MSV = 0;
-		FSW_FS_mode = 1;
+		FSW_FS_mode = FSW_MODE_ON;
 
+		// Have a return value then check for errors and modify the MSV
 		FATFS_Init();
 	}
 	else
 	{
-		FSW_FS_MSV &= ERROR_INIT;
+		FSW_FS_MSV &= ERR_MODULEINIT;
 	}
 }
 
@@ -124,18 +131,15 @@ void FSW_FS_Init( void )
  * This function initializes a FAT file system on the microSD card. The file
  * for logging OBC events is also created.
  * TODO: make this function return an error code if there is an error
- * initializing the FS. This returned code can then be used to set the ERROR_INIT
+ * initializing the FS. This returned code can then be used to set the ERR_MODULEINIT
  * flag for the module or a separate one
- ******************************************************************************/
+ *******************************************************************************/
 static void FATFS_Init( void )
 {
 	FRESULT fresult;
-	// Step 2:
-	// Detect and initialize micro-sd card
-	//TODO: Make this a task that continuously checks the status. or move this functionality to a housekeeping task that monitors the status of many subsystems
-	// That task could then call an init function here
-	//while(1)
-	//{
+	// ****************************
+	// 1. DETECT AND INIT SD-CARD *
+	// ****************************
 	MICROSD_Init();                     // Initialize MicroSD driver
 
 	result_sdCard = disk_initialize(0); // Check micro-SD card status
@@ -143,18 +147,15 @@ static void FATFS_Init( void )
 	switch(result_sdCard)
 	{
 	case STA_NOINIT:                    // Drive not initialized
-		// set mode to off/erp
-		FSW_FS_mode = 0;
+		FSW_FS_mode = FSW_MODE_OFF;
 		// set relevant flag in msv
 		break;
 	case STA_NODISK:                    // No medium in the drive
-		// set mode to off/erp
-		FSW_FS_mode = 0;
+		FSW_FS_mode = FSW_MODE_OFF;
 		// set relevant flag in msv
 		break;
 	case STA_PROTECT:                   // Write protected
-		// set mode to off/erp
-		FSW_FS_mode = 0;
+		FSW_FS_mode = FSW_MODE_OFF;
 		// set relevant flag in msv
 		break;
 	default:
@@ -163,26 +164,76 @@ static void FATFS_Init( void )
 
 	if (!result_sdCard)
 	{
-		//break;                // Drive initialized.
+		printString( "SD-card was initialized\n" );
 	}
 
-	//vTaskDelay( 500/portTICK_RATE_MS );
-	//}
-
-	// Step 3:
-	// Initialize filesystem
+	// ***************
+	// 2. INIT FATFS *
+	// ***************
 	if (f_mount(0, &Fatfs) != FR_OK)
 	{
 #ifndef HIL_sim
-		// Error.No micro-SD with FAT32 is present
-		if(VERBOSE)
-			debugLen = sprintf((char*)debugStr,"\n\nMicroSD Test Unsuccessful: Error 1");
-		else
-			debugLen = sprintf((char*)debugStr,"0;");
-
-		BSP_UART_txBuffer(BSP_UART_DEBUG,(uint8_t*)debugStr,debugLen,true);
+		FSW_FS_MSV &= ERR_NOF32;
+		printString( "ERR: No micro-SD with FAT32 is present!\n" );
 #endif
 	}
+
+
+	// ****************************
+	// 3. DETECT RESET CONDITIONS *
+	// ****************************
+	// Check for log control block
+	if( f_stat("/LOGCNTRLBLOCK.txt", NULL) != FR_OK)
+	{
+		// Initial power on reset or corrupt data. Set flag to create directories, log files and control block file normally as with initial power on
+	}
+	else
+	{
+		// Read flags from control block structure for use
+		// Signature - Indicates what type of reset the previous reset was
+		// InMonInit - Indicates whether the restart occurred during FS initialization
+		// InMemWash - Indicates whether the restart occurred during a memory wash of the file system. Define
+		//				how memory washing works before implementing this
+
+	}
+
+
+	// ***************************
+	// 4. INIT FILES AND FOLDERS *
+	// ***************************
+	// Modify this initialisation  according to flags read in section 3
+
+	if( Reset_signature == 0 )
+	{
+		// Initial power on reset
+		// Normal directory and file initialization
+
+		// Create new directories
+
+		f_mkdir("ERRORLOG");
+		f_mkdir("CMDLOG");
+		f_mkdir("WODLOG");
+		//f_mkdir("PAYLOAD");
+
+		FSW_FS_mode = FSW_MODE_ON;
+	}
+	else if( Reset_signature == 1 )
+	{
+		// OBC watchdog/TCMD reset
+		// Directories and files already exist. Either create new files or retrieve an index from the control block to continue from
+	}
+	else if( Reset_signature == 2 )
+	{
+		// Start up after error correction
+		// Logs/control block might contain an error. Verify correct or wipe/transmit/flag as bad and start new
+	}
+	else
+	{
+		// Corrupt signature.
+		FSW_FS_MSV &= ERR_CORRSIG;
+	}
+
+
 /*
 	// Check for existing files
 	if( f_stat("/ERRORLOG", NULL) == FR_OK && f_stat("/CMDLOG", NULL) == FR_OK && f_stat("/WODLOG", NULL) == FR_OK  )
@@ -208,14 +259,6 @@ static void FATFS_Init( void )
 		printString("No dirs\n");
 	}
 */
-	// Create new directories
-
-	f_mkdir("ERRORLOG");
-	f_mkdir("CMDLOG");
-	f_mkdir("WODLOG");
-	//f_mkdir("PAYLOAD");
-
-	FSW_FS_mode = 1;
 }
 
 /***************************************************************************//**
@@ -586,7 +629,6 @@ static void log_CMD( FS_LogEntry_TypeDef logEntry )
 	i += sizeof(module_strings[logEntry.source]);
 
 	// Indicate the id of the particular CMD
-
 	sprintf(temp_id, "%d\t", (int)(logEntry.id));
 	strcpy( &write_buffer[i], temp_id );
 	i += sizeof( temp_id );
@@ -618,12 +660,12 @@ static void log_CMD( FS_LogEntry_TypeDef logEntry )
 		if( func_result == FR_INVALID_NAME )
 			printString( "invalidname\n" );
 		else
-			printString( "newlog\n" );
+			printString( "new log file\n" );
 #endif
 	}
 
 	//Check if current log file is to large (more than 2KB for now)(f_size). Start a new file if it is
-	if( f_size( &File_object ) >= MAX_LOG_SIZE) 			// <- File probably needs to be opened into this file object before f_size will work
+	if( f_size( &File_object ) >= MAX_LOG_SIZE) 												// <- File probably needs to be opened into this file object before f_size will work
 	{
 		// Close the large file
 		f_close(&File_object);
@@ -649,6 +691,7 @@ static void log_CMD( FS_LogEntry_TypeDef logEntry )
 
 	// Close the file
 	f_close(&File_object);
+	printString( "log created\n" );
 }
 
 /***************************************************************************//**
@@ -726,6 +769,14 @@ static void read_test( void )
  */
 // TASKS ************************************************************************************************************************************************************
 
+/***************************************************************************//**
+ * @author Andre Heunis
+ * @date   07/10/2013
+ *
+ * This task manages the FS subsystem i.e modes, error procedures, etc. Logging
+ * and file system activities are handled by the FSW_FS_LOGmanager task.
+ ******************************************************************************/
+
 static void FSW_FS_CMDmanager( void *pvParameters )
 {
 	portBASE_TYPE Status;
@@ -752,7 +803,7 @@ static void FSW_FS_CMDmanager( void *pvParameters )
 				break;
 
 			default:
-				FSW_FS_MSV &= ERROR_CMDINV;
+				FSW_FS_MSV &= ERR_CMDINV;
 				break;
 			}
 		}
@@ -762,6 +813,12 @@ static void FSW_FS_CMDmanager( void *pvParameters )
 	vTaskDelete( NULL );
 }
 
+/***************************************************************************//**
+ * @author Andre Heunis
+ * @date   07/10/2013
+ *
+ * Test function. Read from the log file.
+ ******************************************************************************/
 
 static void FSW_FS_LOGmanager( void *pvParameters )
 {

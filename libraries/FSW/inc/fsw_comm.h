@@ -45,8 +45,21 @@
  * @{
  ******************************************************************************/
 
+// Addresses of subsystems connected over I2C
+#define I2CADDR_CUBESENSE_W		0x20
+#define I2CADDR_CUBESENSE_R		0x21
+
 xQueueHandle FSW_COMM_CMDqueue;					///< Telecommunications module command queue
+xQueueHandle FSW_COMM_I2Cqueue;					///< I2C bus message queue
+
+typedef struct{
+	uint8_t* buffer;							///< Data to be sent over I2C
+	uint8_t source;								///< Module were the message originated
+	uint8_t dest;								///< I2C read/write address
+	uint32_t msgLen;							///< Length of the data to be sent
+} COMM_I2Cmsg_TypeDef;
 
 void FSW_COMM_Init( void );						///< Initialize the telecommunications module.
+void FSW_COMM_constructI2Cmsg( COMM_I2Cmsg_TypeDef* I2Cmsg, uint8_t* I2Cbuffer, uint8_t source, uint8_t dest, uint32_t msgLen );
 
 #endif /* FSW_COMM_H_ */

@@ -72,6 +72,7 @@ int main(void)
 	BSP_ADC_Init();
 
 	// Initializes UART and I2C communications
+	// Initializes the main I2C channel
 	COMMS_init();
 
 	// Flight Software************************************************************************************************************************************

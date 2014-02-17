@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Delete resource &apos;Source/libraries/Interface/src/CubeSense.1&apos;" deleteContents="false" description="Delete resource &apos;Source/libraries/Interface/src/CubeSense.1&apos;" element1="/Source/libraries/Interface/src/CubeSense.1" flags="7" id="org.eclipse.ltk.core.refactoring.delete.resources" resources="1" stamp="1392293268011"/>
+</session>

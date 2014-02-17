@@ -69,8 +69,6 @@ portTickType xLastWakeTime;		///< Used to delay the poll_UART task
 //TODO: Ideally use the processed flag in the CMD structure instead
 uint8_t CMD_processed = 1;		// Used to flag when no commands are waiting to be processed
 
-uint8_t TCMD_dataIndex = 0;
-
 uint8_t adcs_H = 0xFF, cdh_H = 0xFF, comm_H = 0xFF, handh_H = 0xFF, payload_H = 0xFF, power_H = 0xFF;
 
 uint8_t orbitMode;
@@ -85,6 +83,7 @@ static void FSW_COMM_reportHealthStatus( void );			///< Reports the subsystem's 
 static void FSW_COMM_modeChange( uint8_t newMode );			///< Changes the module's mode and runs any associated procedures
 
 static void FSW_COMM_manager( void *pvParameters );			///< Subsystem manager
+static void FSW_I2C_manager( void *pvParameters );
 
 #ifdef HIL_sim
 static void Poll_UART( void *pvParameters );				///< Continuously polls the UART for TCMDs and TLM requests
@@ -108,6 +107,7 @@ void FSW_COMM_Init( void )
 {
 	FSW_COMM_CMDqueue = xQueueCreate( CMD_Qlen, sizeof( CDH_CMD_TypeDef ) );
 	FSW_transceiver_queue = xQueueCreate( CMD_Qlen, sizeof( CDH_CMD_TypeDef ) );	///< Holds command read from the transceiver ( the UART for now )
+	FSW_COMM_I2Cqueue = xQueueCreate( CMD_Qlen, sizeof( CDH_CMD_TypeDef ) );			///< Holds TLM and TCMDs that need to be transmitted over the I2C bus
 
 	if( FSW_COMM_CMDqueue == NULL )
 	{
@@ -117,6 +117,7 @@ void FSW_COMM_Init( void )
 	else
 	{
 		xTaskCreate( FSW_COMM_manager, "COMMmanager", 240, NULL, 1, NULL );
+		xTaskCreate( FSW_I2C_manager, "I2Cmanager", 240, NULL, 1, NULL );
 
 #ifdef HIL_sim
 		xTaskCreate( Poll_UART, "PollUART", 240, NULL, 1, &Poll_UART_Handle );			///< Polls the transceiver for commands received from the GS ( the UART for now )
@@ -186,6 +187,19 @@ static void FSW_COMM_modeChange( uint8_t newMode )
 	}
 }
 
+/***************************************************************************//**
+ * @author Andre Heunis
+ * @date   14/02/2013
+ *
+ *
+ ******************************************************************************/
+
+void FSW_COMM_constructI2Cmsg( COMM_I2Cmsg_TypeDef* I2Cmsg, uint8_t* I2Cbuffer, uint8_t source, uint8_t dest, uint32_t msgLen )
+{
+
+
+
+}
 
 #ifdef HIL_sim
 
@@ -362,13 +376,19 @@ static uint8_t process_TLM(uint8_t id, uint8_t *txBuffer)
  * @date   05/09/2013
  *
  * Subsystem manager for telecommunications interface module. Processes and
- * executes commands on the comms command queue.
+ * executes commands on the comms command queue. No mutual exclusion will be
+ * required on the UART, I2C, transceiver board etc. as long as this is the
+ * only task that writes data to the communications medium. The
+ * Process_TLM_TCM task receives data on interrupts. I2C communication is
+ * handled by the I2C manager task
  ******************************************************************************/
 
 static void FSW_COMM_manager( void *pvParameters )
 {
 	portBASE_TYPE Status;
 	CDH_CMD_TypeDef ReceivedCMD;
+	uint8_t* buffer;
+	int TLM_index = 0;
 
 	while(1)
 	{
@@ -378,21 +398,37 @@ static void FSW_COMM_manager( void *pvParameters )
 		{
 			switch( ReceivedCMD.id )
 			{
-			case 0x01:							// Report health status
+			case 0x01:							///< Report health status
 				FSW_COMM_reportHealthStatus();
 				break;
 
-			case 0x02:							// Change the modules mode and run any associated procedures
+			case 0x02:							///< Change the modules mode and run any associated procedures
 				FSW_COMM_modeChange( (uint8_t)ReceivedCMD.params[0] );
 				break;
 #ifdef HIL_sim
-			case 0x03:							// Initiate transfer command to Matlab
+			case 0x03:							///< Initiate transfer command to Matlab
 				addToBuffer_uint8 ( &(uartTxBuffer[0]), ReceivedCMD.params[0] );
 				BSP_UART_txBuffer( BSP_UART_DEBUG, uartTxBuffer, 1, false );
 				break;
 
-			case 0x04:							// Return the requested telemetry to matlab simulation
+			case 0x04:							///< Return the requested telemetry to matlab simulation
 				process_TLM ( ReceivedCMD.params[0], uartTxBuffer );
+				break;
+
+			case 0x05:							///< Send telemetry data to Matlab every second. Data is gathered and sent from HandH module
+				buffer = (uint8_t*)ReceivedCMD.params[0];
+
+				addToBuffer_uint8 ( &(uartTxBuffer[0]), 0x06 );						///< 0x06 is id for telemetry stream update
+				BSP_UART_txBuffer( BSP_UART_DEBUG, uartTxBuffer, 1, false );		///< Should be able to send true instead of false
+
+				while( TLM_index < ReceivedCMD.len )
+				{
+					addToBuffer_uint8 ( &(uartTxBuffer[TLM_index]), *(buffer+TLM_index) );
+					TLM_index++;
+				}
+
+				BSP_UART_txBuffer( BSP_UART_DEBUG, uartTxBuffer, TLM_index, false );		///< Should be able to send true instead of false
+				TLM_index = 0;
 				break;
 #endif
 			default:
@@ -406,13 +442,37 @@ static void FSW_COMM_manager( void *pvParameters )
 	vTaskDelete( NULL );
 }
 
+/***************************************************************************//**
+ * @author Andre Heunis
+ * @date   13/02/2013
+ *
+ * This task handles all communication (sending and receiving) on the I2C bus.
+ * As no other task will write to the I2C bus, no mutual exclusion is required.
+ ******************************************************************************/
+
+static void FSW_I2C_manager( void *pvParameters )
+{
+	portBASE_TYPE Status;
+	COMM_I2Cmsg_TypeDef ReceivedMSG;
+
+	while(1)
+	{
+		Status = xQueueReceive( FSW_COMM_I2Cqueue, &ReceivedMSG, portMAX_DELAY );
+
+
+	}
+
+	// Delete the task if it ever breaks out of the loop above
+	vTaskDelete( NULL );
+}
+
 #ifdef HIL_sim
 
 /***************************************************************************//**
  * @author Andre Heunis
  * @date   05/09/2013
  *
- * This function fulfills the roll done by the UART interrupt handler in the
+ * This task fulfills the roll done by the UART interrupt handler in the
  * cubecomputer BSP. The UART is polled periodically and when data is detected,
  * the ID of the data is used to place a structure on a queue for processing by
  * the Process_TLM_TCM task.
@@ -442,31 +502,103 @@ static void Poll_UART( void *pvParameters )
 	vTaskDelete( NULL );
 }
 
+/***************************************************************************//**
+ * @author Andre Heunis
+ * @date   05/09/2013
+ *
+ * This task receives responses from MATLAB if their is a queued
+ * TCMD/TLM request when the FSW polls the simulation.
+ ******************************************************************************/
+
 static void Process_TLM_TCM( void *pvParameters )
 {
 	int id = 0;
-	CDH_CMD_TypeDef tempCMD;			// Used to store the received data once it is cast to a CMD struct
-	unsigned char CMD_rxBuf [64];		// Used to temporarily store incoming data
+	uint8_t TCMD_dataIndex = 0;				// Used to track number of bytes received when receiving commands
+	uint8_t DIARY_index = 0;				// Used to track the position in a diary
+	CDH_CMD_TypeDef 	tempCMD;			// Used to store the received data once it is cast to a CMD struct
+	CDH_Diary_TypeDef	tempDIARY;			// Used to store the received diary
+	unsigned char 		CMD_rxBuf [64];		// Used to temporarily store incoming data
+	unsigned char 		DIARY_rxBuf [68];	// Used to temporarily store incoming data
 
-	// TODO: This loop needs to be removed. Not good to continuously spin through and check two flags
 	while(1)
 	{
+		// TODO: Use a different method (interrupts?) to check the flags. Not good to infinitely spin in the loop. Possible to suspend thread until data arrives?
 		// If new data appears on the UART bus
 		if( ( BSP_UART_DEBUG->STATUS & USART_STATUS_RXDATAV ) )
 		{
 			id = BSP_UART_DEBUG->RXDATA;
 
-			if( id == 0x82 )												// 0x82 is id for TCMD acknowledge sent to MATLAB
+			if( id == 0x82 )															// 0x82 is id for TCMD acknowledge sent to MATLAB
 			{
 				BSP_UART_txBuffer(BSP_UART_DEBUG, uartTxBuffer, process_TLM ( id, uartTxBuffer ), true);
 			}
-			else if( id == 0x01 || id == 0x02 )											// 0x01 is id for incoming CMD struct (TCMD or TLM)
+			else if ( id == 0x03 )														// 0x03 is id for incoming diary of commands
 			{
 				// Prevent polling for further data
 				tempCMD.processed = 0;
 				CMD_processed = 0;
 
-				while( TCMD_dataIndex < 14)	// Receive the entire length of the TCMD
+				// Receive all data
+				// TODO: give diaries a flexible size
+				while( TCMD_dataIndex < sizeof(CDH_Diary_TypeDef) - 1)						// Receive the entire length of the Diary. TODO: should count up to total if not using '<='?
+				{
+					if( (BSP_UART_DEBUG->STATUS & USART_STATUS_RXDATAV) )
+					{
+						DIARY_rxBuf [TCMD_dataIndex] = BSP_UART_DEBUG->RXDATA;
+
+						TCMD_dataIndex++;
+					}
+				}
+
+				// Cast to diary structure
+				tempDIARY = *(CDH_Diary_TypeDef*)(DIARY_rxBuf);
+
+
+				//This method can't be used if receiving an array of bytes to be cast into a diary structure
+				/*
+				// store number of commands to be received
+				if( (BSP_UART_DEBUG->STATUS & USART_STATUS_RXDATAV) )
+				{
+					tempDIARY.CmdCount = BSP_UART_DEBUG->RXDATA;
+				}
+
+				// receive the correct number of command structs
+				while( DIARY_index < tempDIARY.CmdCount )
+				{
+					// Receive command
+					while( TCMD_dataIndex < sizeof(CDH_CMD_TypeDef) )						// Receive the entire length of the TCMD
+					{
+						if( (BSP_UART_DEBUG->STATUS & USART_STATUS_RXDATAV) )
+						{
+							CMD_rxBuf [TCMD_dataIndex] = BSP_UART_DEBUG->RXDATA;
+
+							TCMD_dataIndex++;
+						}
+					}
+
+					// Store command
+					tempCMD = *((CDH_CMD_TypeDef*)CMD_rxBuf);
+					tempDIARY.CMDlist[DIARY_index] = tempCMD;
+					DIARY_index++;
+				}
+				*/
+
+				// send the diary to the processDIARY task in fsw_cdh.h and reset flags
+				xQueueSendToBack( FSW_CDH_DIARYqueue, &tempDIARY, 0 );
+
+				tempCMD.processed = 1;
+				CMD_processed = 1;
+				DIARY_index = 0;
+				TCMD_dataIndex = 0;
+				id = 0;
+			}
+			else if( id == 0x01 || id == 0x02 )											// 0x01 is id for incoming CMD struct (TCMD or TLM)
+			{																			// 0x02 is id for telemetry request
+				// Prevent polling for further data
+				tempCMD.processed = 0;
+				CMD_processed = 0;
+
+				while( TCMD_dataIndex < /*sizeof(CDH_CMD_TypeDef)*/ 14)						// Receive the entire length of the TCMD
 				{
 					if( (BSP_UART_DEBUG->STATUS & USART_STATUS_RXDATAV) )
 					{

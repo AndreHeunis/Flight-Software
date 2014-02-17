@@ -37,6 +37,8 @@
 #include "comms.h"							// for debugging printing
 #include "fsw_modes.h"						// for mode definitions
 
+#include "CubeSense.1.h"					// for interfacing with CubeSense
+
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"

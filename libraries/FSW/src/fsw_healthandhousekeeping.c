@@ -40,10 +40,22 @@
 //#define ERROR_<*>		  0x04
 //#define ERROR_<*>		  0x08
 
+#define TLMID_V1			0x01
+#define TLMID_V2			0x02
+#define TLMID_OBCTEMP		0x03
+
+// For sending data of variable length over UART
+#define UART_ESCAPECHAR 0x1F
+#define UART_SOM        0x7F
+#define UART_EOM        0xFF
+
 static xTaskHandle IncrementOBCTime_handle;
 
 static uint8_t FSW_HANDH_MSV = 0;			///< Health status byte for HandH module.
 static uint8_t FSW_HANDH_mode = 0;
+
+HANDH_EnviroTLM_Typedef HAND_EnviroTLM;			///< Structure to hold environmental TLM
+HANDH_EnviroTLMselection_Typedef HANDH_EnviroTLMselection;	///< Flags to indicate which telemetry to send
 
 // TODO: These should possibly be moved to their corresponding modules
 // Health
@@ -67,6 +79,9 @@ static void IncrementOBCTime( void *pvParameters );
 // Satellite and module management
 static void FSW_HANDH_CMDmanager( void *pvParameters );			///< Subsystem command manager for the Health and Housekeeping module
 static void FSW_HANDH_DATAmanager( void *pvParameters );		///< Subsystem data manager for the Health and Housekeeping module
+
+// Real-time telemetry stream
+static void FSW_HANDH_TLMSTREAMmanager( void *pvParameters );
 
 /*ADDED FOR HIL SIMULATION PURPOSES******************************************/
 //#ifdef HIL_sim
@@ -116,6 +131,9 @@ void FSW_HandH_Init( void )
 		xTaskCreate( IncrementOBCTime, "IncrementOBCTime", 240, NULL, 1, &IncrementOBCTime_handle );
 		xTaskCreate( FSW_HANDH_CMDmanager, "HANDH_CMDmanager", 240, NULL, 1, NULL );
 		xTaskCreate( FSW_HANDH_DATAmanager, "HANDH_DATAmanager", 240, NULL, 1, NULL );
+#ifdef HIL_sim
+		xTaskCreate( FSW_HANDH_TLMSTREAMmanager, "FSW_HANDH_TLMSTREAMmanager", 240, NULL, 1, NULL );
+#endif
 
 		FSW_HANDH_MSV = 0;
 		FSW_HANDH_mode = 1;
@@ -324,7 +342,10 @@ static void IncrementOBCTime( void *pvParameters )
 		vTaskDelay(1000/portTICK_RATE_MS);	// more accurate to use delay until?
 
 		OBC_time++;
+
+#ifndef HIL_sim
 		printOBCtime();
+#endif
 	}
 
 	// Delete the task if it ever breaks out of the loop above
@@ -448,6 +469,95 @@ static void FSW_HANDH_DATAmanager( void *pvParameters )
 	vTaskDelete( NULL );
 }
 
+/***************************************************************************//**
+ * @author Andre Heunis
+ * @date   05/09/2013
+ *
+ * Task to handle the real-time TLM stream. This stream transmits the TLM
+ * specified by the user at the rate specified by the user.
+ ******************************************************************************/
+
+static void FSW_HANDH_TLMSTREAMmanager( void *pvParameters )
+{
+	CDH_CMD_TypeDef Telemetry;
+	uint8_t TLM_buffer[50];						///< TLM buf to send to fsw_comm for transmission
+	uint8_t TLM_buffer_index = 0;
+	float OBCTEMP = 0;
+	unsigned long long_OBCTEMP = 0;
+
+	// Always enabled for testing
+	HANDH_EnviroTLMselection.HANDH_V1_flag = 1;
+	HANDH_EnviroTLMselection.HANDH_V2_flag = 1;
+	HANDH_EnviroTLMselection.HANDH_OBCtemp_flag = 1;
+
+	while(1)
+	{
+		// TLM is sent every 3 seconds
+		vTaskDelay(3000/portTICK_RATE_MS);
+		BSP_ADC_update(1);
+
+		// Update all the telemetry fields
+		HAND_EnviroTLM.HANDH_V1 = BSP_ADC_getData(CHANNEL0);
+		HAND_EnviroTLM.HANDH_V2 = BSP_ADC_getData(CHANNEL1);
+		//HAND_EnviroTLM.HANDH_OBCtemp = BSP_ADC_getData(TEMPERATURE);
+
+		// Construct buffer to send
+		TLM_buffer[TLM_buffer_index++] = UART_ESCAPECHAR;
+		TLM_buffer[TLM_buffer_index++] = UART_SOM;
+
+		if( HANDH_EnviroTLMselection.HANDH_V1_flag )
+		{
+			TLM_buffer[TLM_buffer_index++] = TLMID_V1;
+			TLM_buffer[TLM_buffer_index++] = (BSP_ADC_getData(CHANNEL0)&0x00FF);
+			TLM_buffer[TLM_buffer_index++] = (BSP_ADC_getData(CHANNEL0)&0xFF00)>>8;
+		}
+		if( HANDH_EnviroTLMselection.HANDH_V2_flag )
+		{
+			TLM_buffer[TLM_buffer_index++] = TLMID_V2;
+			TLM_buffer[TLM_buffer_index++] = (BSP_ADC_getData(CHANNEL1)&0x00FF);
+			TLM_buffer[TLM_buffer_index++] = (BSP_ADC_getData(CHANNEL1)&0xFF00)>>8;
+		}
+		if( HANDH_EnviroTLMselection.HANDH_OBCtemp_flag )
+		{
+			TLM_buffer[TLM_buffer_index++] = TLMID_OBCTEMP;
+
+			// Break the float into 4 bytes
+			OBCTEMP = BSP_ADC_temp2Float(BSP_ADC_getData(TEMPERATURE));
+			long_OBCTEMP = *(unsigned long*)&OBCTEMP;
+
+			TLM_buffer[TLM_buffer_index++] = (long_OBCTEMP & 0xFF);
+			TLM_buffer[TLM_buffer_index++] = (long_OBCTEMP & 0xFF00) >> 8;
+			TLM_buffer[TLM_buffer_index++] = (long_OBCTEMP & 0xFF0000) >> 16;
+			TLM_buffer[TLM_buffer_index++] = (long_OBCTEMP & 0xFF000000) >> 24;
+		}
+
+
+		TLM_buffer[TLM_buffer_index++] = UART_ESCAPECHAR;
+		TLM_buffer[TLM_buffer_index++] = UART_EOM;
+
+		// Send telemetry. Currently just a command with a telemetry value as the parameter.
+		// Dont allow a different module (e.g fsw_comms.c) to gather the telemetry. Must be done here
+		Telemetry.id = 0x05;
+		Telemetry.params[0] = TLM_buffer;
+		Telemetry.len = TLM_buffer_index;
+		//Telemetry.params[0] = BSP_ADC_getData(CHANNEL1);	// Sample a voltage on the OBC
+		//Telemetry.params[0] = BSP_ADC_temp2Float(BSP_ADC_getData(TEMPERATURE));				// requires different conversions to byte arrays
+
+/*
+		addToBuffer_uint16(&(txBuffer[0]),BSP_ADC_getData(CHANNEL0));
+		addToBuffer_uint16(&(txBuffer[2]),BSP_ADC_getData(CHANNEL1));
+		addToBuffer_uint16(&(txBuffer[4]),BSP_ADC_getData(CHANNEL2));
+		addToBuffer_uint16(&(txBuffer[6]),BSP_ADC_getData(CHANNEL3));
+		addToBuffer_uint16(&(txBuffer[8]),BSP_ADC_getData(TEMPERATURE));*/
+		//tlmLen = 10;
+
+		xQueueSendToBack( FSW_COMM_CMDqueue, &Telemetry, 0 );
+		TLM_buffer_index = 0;
+	}
+
+	// Delete the task if it ever breaks out of the loop above
+	vTaskDelete( NULL );
+}
 // TEST FUNCTIONS *********************************************************************************************************************
 
 // Prints the current OBC date and time

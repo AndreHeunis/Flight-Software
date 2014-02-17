@@ -40,10 +40,32 @@
 #include "fsw_payload.h"	// for payload CMD queue
 #include "fsw_cdh.h"		// for defining commands
 
+/****************************************************
+ * OBC Environmental Telemetry selection structure
+ *
+ * Flags to indicate which telemetry must be streamed
+ ****************************************************/
+typedef struct{
+	uint8_t HANDH_V1_flag;
+	uint8_t HANDH_V2_flag;
+	uint8_t HANDH_OBCtemp_flag;
+}HANDH_EnviroTLMselection_Typedef;
+
+/****************************************************
+ * OBC Environmental Telemetry structure
+ *
+ * Holds two voltages and the OBC temperature
+ ****************************************************/
+typedef struct{
+	uint8_t HANDH_V1;
+	uint8_t HANDH_V2;
+	uint8_t HANDH_OBCtemp;
+}HANDH_EnviroTLM_Typedef;
+
 xQueueHandle FSW_HANDH_CMDqueue;		///< Health and Housekeeping module command queue
 xQueueHandle FSW_HANDH_DATAqueue;		///< Health and Housekeeping module command queue
 
-time_t OBC_time;								///< Date and time for the OBC
+time_t OBC_time;						///< Date and time for the OBC
 
 void FSW_HandH_Init( void );
 time_t getOBC_time( void );				///< Getter function for OBC_time

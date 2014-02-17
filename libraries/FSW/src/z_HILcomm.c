@@ -19,7 +19,8 @@ void HIL_TransceiverRX( void *pvParameters )
 {
 	printString("Flight Software Alpha Terminal Test Application\n");
 	printString("MENU:\n't': Print out RTC value\n'm': MicroSD test\n");
-	printString("c/w/e: Test log entries\n");
+	printString("c/w/e: Test log entries\n p: OBCtemp");
+	printString("i: i2c 'status' TLM\n I: i2c 'comm status TLM\n'");
 	printString("'r': Reset MCU\n'a': Print test string\n");
 
 	while(1)

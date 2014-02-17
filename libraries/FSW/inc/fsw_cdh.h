@@ -94,7 +94,8 @@ typedef struct{
 
 /// Structure used for a diary entry containing multiple commands.
 typedef struct{
-	CDH_CMD_TypeDef CMDlist[CDH_DIARY_CMDCOUNT];
+	CDH_CMD_TypeDef CMDlist[CDH_DIARY_CMDCOUNT];	///< Array to hold commands
+	uint8_t CmdCount;								///< The number of commands in this diary
 }CDH_Diary_TypeDef;
 
 /// Structure used for passing data between tasks
@@ -103,6 +104,12 @@ typedef struct{
 	uint8_t datatype;					///< What the data represents
 	uint8_t source;						///< The module where the data originates
 }CDH_DATA_TypeDef;
+
+/// Structure used to hold TLM data for the real time stream
+typedef struct{
+	uint8_t *TLM;				///< The telemetry that needs to be streamed
+	uint8_t CmdCount;			///< The number of commands in this diary
+}CDH_TLMstream_TypeDef;
 
 /*COMMANDS USED FOR TESTING. INITIALIZED IN testCMD_initialize( void );*********************************************************/
 CDH_CMD_TypeDef sim_Data;

@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<workbench progressCount="30" version="2.0">
+<workbench progressCount="34" version="2.0">
 <workbenchAdvisor/>
-<window height="1040" width="960" x="960" y="0">
+<window height="1040" maximized="true" width="960" x="584" y="82">
 <fastViewData fastViewLocation="1024"/>
 <perspectiveBar>
 <itemSize x="208"/>
 </perspectiveBar>
 <coolbarLayout>
 <coolItem id="group.file" itemType="typeGroupMarker"/>
-<coolItem id="org.eclipse.ui.workbench.file" itemType="typeToolBarContribution" x="210" y="22"/>
+<coolItem id="org.eclipse.ui.workbench.file" itemType="typeToolBarContribution" x="153" y="22"/>
 <coolItem id="additions" itemType="typeGroupMarker"/>
 <coolItem id="org.eclipse.cdt.ui.CElementCreationActionSet" itemType="typeToolBarContribution" x="167" y="22"/>
 <coolItem id="org.eclipse.cdt.ui.buildConfigActionSet" itemType="typeToolBarContribution" x="89" y="22"/>
@@ -31,63 +31,58 @@
 <folder appearance="1" expanded="2">
 <presentation id="org.eclipse.ui.presentations.WorkbenchPresentationFactory">
 <part id="0"/>
-<part id="1"/>
 <part id="2"/>
+<part id="1"/>
 <part id="3"/>
+<part id="6"/>
 <part id="4"/>
 <part id="5"/>
-<part id="6"/>
 <part id="7"/>
 <part id="8"/>
 <part id="9"/>
-<part id="10"/>
 </presentation>
 </folder>
 </info>
 </editorArea>
 <editor id="org.eclipse.cdt.make.editor" name="Makefile" partName="Makefile" path="C:/Users/15731979/Documents/CubeComputerBSP/workspace/Source/codesourcery/Makefile" title="Makefile" tooltip="Source/codesourcery/Makefile" workbook="DefaultEditorWorkbook">
 <input factoryID="org.eclipse.ui.part.FileEditorInputFactory" path="/Source/codesourcery/Makefile"/>
-<editorState selectionHorizontalPixel="0" selectionLength="0" selectionOffset="3326" selectionTopPixel="540"/>
-</editor>
-<editor id="org.eclipse.cdt.ui.editor.CEditor" name="fsw_cdh.c" partName="fsw_cdh.c" path="C:/Users/15731979/Documents/CubeComputerBSP/workspace/libraries/FSW/src/fsw_cdh.c" title="fsw_cdh.c" tooltip="Source/libraries/FSW/src/fsw_cdh.c" workbook="DefaultEditorWorkbook">
-<input factoryID="org.eclipse.ui.part.FileEditorInputFactory" path="/Source/libraries/FSW/src/fsw_cdh.c"/>
-<editorState selectionHorizontalPixel="0" selectionLength="0" selectionOffset="13231" selectionTopPixel="495"/>
-</editor>
-<editor id="org.eclipse.cdt.ui.editor.CEditor" name="fsw_cdh.h" partName="fsw_cdh.h" path="C:/Users/15731979/Documents/CubeComputerBSP/workspace/libraries/FSW/inc/fsw_cdh.h" title="fsw_cdh.h" tooltip="Source/libraries/FSW/inc/fsw_cdh.h" workbook="DefaultEditorWorkbook">
-<input factoryID="org.eclipse.ui.part.FileEditorInputFactory" path="/Source/libraries/FSW/inc/fsw_cdh.h"/>
-<editorState selectionHorizontalPixel="0" selectionLength="8" selectionOffset="2405" selectionTopPixel="0"/>
+<editorState selectionHorizontalPixel="0" selectionLength="0" selectionOffset="3417" selectionTopPixel="1665"/>
 </editor>
 <editor id="org.eclipse.cdt.ui.editor.CEditor" name="comms.c" partName="comms.c" path="C:/Users/15731979/Documents/CubeComputerBSP/workspace/Source/comms.c" title="comms.c" tooltip="Source/comms.c" workbook="DefaultEditorWorkbook">
 <input factoryID="org.eclipse.ui.part.FileEditorInputFactory" path="/Source/comms.c"/>
-<editorState selectionHorizontalPixel="0" selectionLength="0" selectionOffset="361" selectionTopPixel="0"/>
-</editor>
-<editor id="org.eclipse.cdt.ui.editor.CEditor" name="fsw_filesystem.c" partName="fsw_filesystem.c" path="C:/Users/15731979/Documents/CubeComputerBSP/workspace/libraries/FSW/src/fsw_filesystem.c" title="fsw_filesystem.c" tooltip="Source/libraries/FSW/src/fsw_filesystem.c" workbook="DefaultEditorWorkbook">
-<input factoryID="org.eclipse.ui.part.FileEditorInputFactory" path="/Source/libraries/FSW/src/fsw_filesystem.c"/>
-<editorState selectionHorizontalPixel="0" selectionLength="0" selectionOffset="6283" selectionTopPixel="795"/>
-</editor>
-<editor id="org.eclipse.cdt.ui.editor.CEditor" name="comms.h" partName="comms.h" path="C:/Users/15731979/Documents/CubeComputerBSP/workspace/Source/comms.h" title="comms.h" tooltip="Source/comms.h" workbook="DefaultEditorWorkbook">
-<input factoryID="org.eclipse.ui.part.FileEditorInputFactory" path="/Source/comms.h"/>
-<editorState selectionHorizontalPixel="0" selectionLength="0" selectionOffset="550" selectionTopPixel="0"/>
-</editor>
-<editor id="org.eclipse.cdt.ui.editor.CEditor" name="fsw_comm.c" partName="fsw_comm.c" path="C:/Users/15731979/Documents/CubeComputerBSP/workspace/libraries/FSW/src/fsw_comm.c" title="fsw_comm.c" tooltip="Source/libraries/FSW/src/fsw_comm.c" workbook="DefaultEditorWorkbook">
-<input factoryID="org.eclipse.ui.part.FileEditorInputFactory" path="/Source/libraries/FSW/src/fsw_comm.c"/>
-<editorState selectionHorizontalPixel="0" selectionLength="0" selectionOffset="11674" selectionTopPixel="1290"/>
-</editor>
-<editor id="org.eclipse.cdt.ui.editor.CEditor" name="fsw_healthandhousekeeping.c" partName="fsw_healthandhousekeeping.c" path="C:/Users/15731979/Documents/CubeComputerBSP/workspace/libraries/FSW/src/fsw_healthandhousekeeping.c" title="fsw_healthandhousekeeping.c" tooltip="Source/libraries/FSW/src/fsw_healthandhousekeeping.c" workbook="DefaultEditorWorkbook">
-<input factoryID="org.eclipse.ui.part.FileEditorInputFactory" path="/Source/libraries/FSW/src/fsw_healthandhousekeeping.c"/>
-<editorState selectionHorizontalPixel="0" selectionLength="0" selectionOffset="82" selectionTopPixel="1170"/>
+<editorState selectionHorizontalPixel="0" selectionLength="0" selectionOffset="16628" selectionTopPixel="825"/>
 </editor>
 <editor id="org.eclipse.cdt.ui.editor.CEditor" name="main.c" partName="main.c" path="C:/Users/15731979/Documents/CubeComputerBSP/workspace/Source/main.c" title="main.c" tooltip="Source/main.c" workbook="DefaultEditorWorkbook">
 <input factoryID="org.eclipse.ui.part.FileEditorInputFactory" path="/Source/main.c"/>
-<editorState selectionHorizontalPixel="0" selectionLength="0" selectionOffset="1913" selectionTopPixel="360"/>
+<editorState selectionHorizontalPixel="0" selectionLength="0" selectionOffset="2320" selectionTopPixel="0"/>
 </editor>
-<editor activePart="true" focus="true" id="org.eclipse.cdt.ui.editor.CEditor" name="bsp_ebi.c" partName="bsp_ebi.c" path="C:/Users/15731979/Documents/CubeComputerBSP/workspace/libraries/bspLib/src/bsp_ebi.c" title="bsp_ebi.c" tooltip="Source/libraries/bspLib/src/bsp_ebi.c" workbook="DefaultEditorWorkbook">
-<input factoryID="org.eclipse.ui.part.FileEditorInputFactory" path="/Source/libraries/bspLib/src/bsp_ebi.c"/>
-<editorState selectionHorizontalPixel="0" selectionLength="0" selectionOffset="2372" selectionTopPixel="405"/>
+<editor id="org.eclipse.cdt.ui.editor.CEditor" name="fsw_adcs.c" partName="fsw_adcs.c" path="C:/Users/15731979/Documents/CubeComputerBSP/workspace/libraries/FSW/src/fsw_adcs.c" title="fsw_adcs.c" tooltip="Source/libraries/FSW/src/fsw_adcs.c" workbook="DefaultEditorWorkbook">
+<input factoryID="org.eclipse.ui.part.FileEditorInputFactory" path="/Source/libraries/FSW/src/fsw_adcs.c"/>
+<editorState selectionHorizontalPixel="0" selectionLength="86" selectionOffset="7699" selectionTopPixel="1362"/>
 </editor>
-<editor id="org.eclipse.cdt.ui.editor.CEditor" name="bsp_acmp.h" partName="bsp_acmp.h" path="C:/Users/15731979/Documents/CubeComputerBSP/workspace/libraries/bspLib/inc/bsp_acmp.h" title="bsp_acmp.h" tooltip="Source/libraries/bspLib/inc/bsp_acmp.h" workbook="DefaultEditorWorkbook">
-<input factoryID="org.eclipse.ui.part.FileEditorInputFactory" path="/Source/libraries/bspLib/inc/bsp_acmp.h"/>
-<editorState selectionHorizontalPixel="0" selectionLength="0" selectionOffset="3078" selectionTopPixel="285"/>
+<editor id="org.eclipse.cdt.ui.editor.CEditor" name="CubeSense.1.c" partName="CubeSense.1.c" path="C:/Users/15731979/Documents/CubeComputerBSP/workspace/libraries/Interface/src/CubeSense.1.c" title="CubeSense.1.c" tooltip="Source/libraries/Interface/src/CubeSense.1.c" workbook="DefaultEditorWorkbook">
+<input factoryID="org.eclipse.ui.part.FileEditorInputFactory" path="/Source/libraries/Interface/src/CubeSense.1.c"/>
+<editorState selectionHorizontalPixel="0" selectionLength="7" selectionOffset="993" selectionTopPixel="0"/>
+</editor>
+<editor id="org.eclipse.cdt.ui.editor.CEditor" name="CubeSense.1.h" partName="CubeSense.1.h" path="C:/Users/15731979/Documents/CubeComputerBSP/workspace/libraries/Interface/inc/CubeSense.1.h" title="CubeSense.1.h" tooltip="Source/libraries/Interface/inc/CubeSense.1.h" workbook="DefaultEditorWorkbook">
+<input factoryID="org.eclipse.ui.part.FileEditorInputFactory" path="/Source/libraries/Interface/inc/CubeSense.1.h"/>
+<editorState selectionHorizontalPixel="0" selectionLength="28" selectionOffset="1202" selectionTopPixel="667"/>
+</editor>
+<editor id="org.eclipse.cdt.ui.editor.CEditor" name="fsw_adcs.h" partName="fsw_adcs.h" path="C:/Users/15731979/Documents/CubeComputerBSP/workspace/libraries/FSW/inc/fsw_adcs.h" title="fsw_adcs.h" tooltip="Source/libraries/FSW/inc/fsw_adcs.h" workbook="DefaultEditorWorkbook">
+<input factoryID="org.eclipse.ui.part.FileEditorInputFactory" path="/Source/libraries/FSW/inc/fsw_adcs.h"/>
+<editorState selectionHorizontalPixel="0" selectionLength="0" selectionOffset="1762" selectionTopPixel="0"/>
+</editor>
+<editor activePart="true" focus="true" id="org.eclipse.cdt.ui.editor.CEditor" name="fsw_comm.c" partName="fsw_comm.c" path="C:/Users/15731979/Documents/CubeComputerBSP/workspace/libraries/FSW/src/fsw_comm.c" title="fsw_comm.c" tooltip="Source/libraries/FSW/src/fsw_comm.c" workbook="DefaultEditorWorkbook">
+<input factoryID="org.eclipse.ui.part.FileEditorInputFactory" path="/Source/libraries/FSW/src/fsw_comm.c"/>
+<editorState selectionHorizontalPixel="0" selectionLength="0" selectionOffset="7343" selectionTopPixel="1545"/>
+</editor>
+<editor id="org.eclipse.cdt.ui.editor.CEditor" name="fsw_comm.h" partName="fsw_comm.h" path="C:/Users/15731979/Documents/CubeComputerBSP/workspace/libraries/FSW/inc/fsw_comm.h" title="fsw_comm.h" tooltip="Source/libraries/FSW/inc/fsw_comm.h" workbook="DefaultEditorWorkbook">
+<input factoryID="org.eclipse.ui.part.FileEditorInputFactory" path="/Source/libraries/FSW/inc/fsw_comm.h"/>
+<editorState selectionHorizontalPixel="0" selectionLength="128" selectionOffset="2725" selectionTopPixel="0"/>
+</editor>
+<editor id="org.eclipse.cdt.ui.editor.CEditor" name="fsw_cdh.h" partName="fsw_cdh.h" path="C:/Users/15731979/Documents/CubeComputerBSP/workspace/libraries/FSW/inc/fsw_cdh.h" title="fsw_cdh.h" tooltip="Source/libraries/FSW/inc/fsw_cdh.h" workbook="DefaultEditorWorkbook">
+<input factoryID="org.eclipse.ui.part.FileEditorInputFactory" path="/Source/libraries/FSW/inc/fsw_cdh.h"/>
+<editorState selectionHorizontalPixel="0" selectionLength="16" selectionOffset="3679" selectionTopPixel="457"/>
 </editor>
 </editors>
 <views>
@@ -147,6 +142,10 @@
 <view id="org.eclipse.cdt.make.ui.views.MakeView" partName="Make Target"/>
 <view id="org.eclipse.ui.views.ProblemView" partName="Problems">
 <viewState PRIMARY_SORT_FIELD="org.eclipse.ui.ide.severityAndDescriptionField" categoryGroup="org.eclipse.ui.ide.severity" markerContentGenerator="org.eclipse.ui.ide.problemsGenerator" partName="Problems">
+<expanded>
+<category IMemento.internal.id="Warnings"/>
+<category IMemento.internal.id="Errors"/>
+</expanded>
 <columnWidths org.eclipse.ui.ide.locationField="90" org.eclipse.ui.ide.markerType="141" org.eclipse.ui.ide.pathField="163" org.eclipse.ui.ide.resourceField="90" org.eclipse.ui.ide.severityAndDescriptionField="774"/>
 <visible IMemento.internal.id="org.eclipse.ui.ide.severityAndDescriptionField"/>
 <visible IMemento.internal.id="org.eclipse.ui.ide.resourceField"/>
@@ -249,7 +248,7 @@
 <presentation id="org.eclipse.ui.presentations.WorkbenchPresentationFactory"/>
 </folder>
 </info>
-<info part="org.eclipse.ui.editorss" ratio="0.113612" ratioLeft="106" ratioRight="827" relationship="2" relative="topLeft"/>
+<info part="org.eclipse.ui.editorss" ratio="0.16867469" ratioLeft="322" ratioRight="1587" relationship="2" relative="topLeft"/>
 <info folder="true" part="bottom" ratio="0.75" ratioLeft="699" ratioRight="233" relationship="4" relative="org.eclipse.ui.editorss">
 <folder activePageID="org.eclipse.ui.console.ConsoleView" appearance="2" expanded="2">
 <page content="org.eclipse.ui.views.ProblemView" label="Problems"/>
@@ -341,27 +340,18 @@
 <view id="org.eclipse.debug.ui.MemoryView"/>
 <view id="org.eclipse.ui.views.ContentOutline"/>
 <fastViewBars/>
-<layout>
-<mainWindow>
-<info folder="true" part="org.eclipse.debug.internal.ui.NavigatorFolderView">
-<folder activePageID="org.eclipse.debug.ui.DebugView" appearance="2" expanded="2">
-<page content="org.eclipse.debug.ui.DebugView" label="Debug"/>
+<layout>&#x0A;<mainWindow>&#x0A;<info folder="true" part="org.eclipse.debug.internal.ui.NavigatorFolderView">&#x0A;<folder activePageID="org.eclipse.debug.ui.DebugView" appearance="2" expanded="2">&#x0A;<page content="org.eclipse.debug.ui.DebugView" label="Debug"/>
 <page content="org.eclipse.ui.views.ResourceNavigator" label="LabelNotFound"/>
-<presentation id="org.eclipse.ui.presentations.WorkbenchPresentationFactory">
-<part id="0"/>
+<presentation id="org.eclipse.ui.presentations.WorkbenchPresentationFactory">&#x0A;<part id="0"/>
 </presentation>
 </folder>
 </info>
-<info folder="true" part="stickyFolderRight" ratio="0.7495845" ratioLeft="1353" ratioRight="452" relationship="2" relative="org.eclipse.debug.internal.ui.NavigatorFolderView">
-<folder appearance="2" expanded="2">
-<page content="org.eclipse.help.ui.HelpView" label="LabelNotFound"/>
+<info folder="true" part="stickyFolderRight" ratio="0.7495845" ratioLeft="1353" ratioRight="452" relationship="2" relative="org.eclipse.debug.internal.ui.NavigatorFolderView">&#x0A;<folder appearance="2" expanded="2">&#x0A;<page content="org.eclipse.help.ui.HelpView" label="LabelNotFound"/>
 <page content="org.eclipse.ui.internal.introview" label="LabelNotFound"/>
 <page content="org.eclipse.ui.cheatsheets.views.CheatSheetView" label="LabelNotFound"/>
 </folder>
 </info>
-<info folder="true" part="org.eclipse.debug.internal.ui.ConsoleFolderView" ratio="0.84334767" ratioLeft="786" ratioRight="146" relationship="4" relative="org.eclipse.debug.internal.ui.NavigatorFolderView">
-<folder activePageID="org.eclipse.ui.console.ConsoleView" appearance="2" expanded="2">
-<page content="org.eclipse.ui.console.ConsoleView" label="Console"/>
+<info folder="true" part="org.eclipse.debug.internal.ui.ConsoleFolderView" ratio="0.84334767" ratioLeft="786" ratioRight="146" relationship="4" relative="org.eclipse.debug.internal.ui.NavigatorFolderView">&#x0A;<folder activePageID="org.eclipse.ui.console.ConsoleView" appearance="2" expanded="2">&#x0A;<page content="org.eclipse.ui.console.ConsoleView" label="Console"/>
 <page content="org.eclipse.ui.views.TaskList" label="Tasks"/>
 <page content="org.eclipse.ui.views.ProblemView" label="Problems"/>
 <page content="org.eclipse.cdt.debug.ui.executablesView" label="Executables"/>
@@ -369,8 +359,7 @@
 <page content="org.eclipse.ui.views.BookmarkView" label="LabelNotFound"/>
 <page content="org.eclipse.ui.views.PropertySheet" label="LabelNotFound"/>
 <page content="org.eclipse.cdt.debug.ui.memory.memorybrowser.MemoryBrowser" label="LabelNotFound"/>
-<presentation id="org.eclipse.ui.presentations.WorkbenchPresentationFactory">
-<part id="0"/>
+<presentation id="org.eclipse.ui.presentations.WorkbenchPresentationFactory">&#x0A;<part id="0"/>
 <part id="1"/>
 <part id="2"/>
 <part id="3"/>
@@ -379,27 +368,21 @@
 </folder>
 </info>
 <info part="org.eclipse.ui.editorss" ratio="0.38314176" ratioLeft="300" ratioRight="483" relationship="4" relative="org.eclipse.debug.internal.ui.NavigatorFolderView"/>
-<info folder="true" part="org.eclipse.debug.internal.ui.OutlineFolderView" ratio="0.8391828" ratioLeft="1602" ratioRight="307" relationship="2" relative="org.eclipse.ui.editorss">
-<folder activePageID="org.eclipse.ui.views.ContentOutline" appearance="2" expanded="2">
-<page content="org.eclipse.ui.views.ContentOutline" label="Outline"/>
+<info folder="true" part="org.eclipse.debug.internal.ui.OutlineFolderView" ratio="0.8391828" ratioLeft="1602" ratioRight="307" relationship="2" relative="org.eclipse.ui.editorss">&#x0A;<folder activePageID="org.eclipse.ui.views.ContentOutline" appearance="2" expanded="2">&#x0A;<page content="org.eclipse.ui.views.ContentOutline" label="Outline"/>
 <page content="org.eclipse.cdt.dsf.gdb.ui.tracecontrol.view" label="LabelNotFound"/>
 <page content="org.eclipse.cdt.dsf.debug.ui.disassembly.view" label="LabelNotFound"/>
-<presentation id="org.eclipse.ui.presentations.WorkbenchPresentationFactory">
-<part id="0"/>
+<presentation id="org.eclipse.ui.presentations.WorkbenchPresentationFactory">&#x0A;<part id="0"/>
 </presentation>
 </folder>
 </info>
-<info folder="true" part="org.eclipse.debug.internal.ui.ToolsFolderView" ratio="0.5" ratioLeft="901" ratioRight="901" relationship="2" relative="org.eclipse.debug.internal.ui.NavigatorFolderView">
-<folder activePageID="org.eclipse.debug.ui.VariableView" appearance="2" expanded="2">
-<page content="org.eclipse.debug.ui.VariableView" label="Variables"/>
+<info folder="true" part="org.eclipse.debug.internal.ui.ToolsFolderView" ratio="0.5" ratioLeft="901" ratioRight="901" relationship="2" relative="org.eclipse.debug.internal.ui.NavigatorFolderView">&#x0A;<folder activePageID="org.eclipse.debug.ui.VariableView" appearance="2" expanded="2">&#x0A;<page content="org.eclipse.debug.ui.VariableView" label="Variables"/>
 <page content="org.eclipse.debug.ui.BreakpointView" label="Breakpoints"/>
 <page content="org.eclipse.cdt.embsysregview.views.EmbSysRegView" label="EmbSys Registers"/>
 <page content="org.eclipse.debug.ui.ExpressionView" label="Expressions"/>
 <page content="org.eclipse.debug.ui.RegisterView" label="Registers"/>
 <page content="org.eclipse.debug.ui.ModuleView" label="Modules"/>
 <page content="org.eclipse.cdt.debug.ui.SignalsView" label="LabelNotFound"/>
-<presentation id="org.eclipse.ui.presentations.WorkbenchPresentationFactory">
-<part id="0"/>
+<presentation id="org.eclipse.ui.presentations.WorkbenchPresentationFactory">&#x0A;<part id="0"/>
 <part id="1"/>
 <part id="2"/>
 <part id="3"/>
@@ -415,165 +398,164 @@
 <workingSets/>
 <navigationHistory>
 <editors>
-<editor factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.eclipse.cdt.ui.editor.CEditor" path="/Source/main.c"/>
-<editor factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.eclipse.cdt.ui.editor.CEditor" path="/Source/libraries/bspLib/src/bsp_rtc.c"/>
-<editor factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.eclipse.cdt.ui.editor.CEditor" path="/Source/libraries/bspLib/src/bsp_rtc.c"/>
-<editor factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.eclipse.cdt.ui.editor.CEditor" path="/Source/libraries/bspLib/src/bsp_rtc.c"/>
-<editor factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.eclipse.cdt.ui.editor.CEditor" path="/Source/libraries/CMSIS/Include/core_cm3.h"/>
-<editor factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.eclipse.cdt.make.editor" path="/Source/codesourcery/Makefile"/>
-<editor factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.eclipse.cdt.make.editor" path="/Source/codesourcery/Makefile"/>
-<editor factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.eclipse.cdt.ui.editor.CEditor" path="/Source/main.c"/>
-<editor factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.eclipse.cdt.ui.editor.CEditor" path="/Source/libraries/bspLib/src/bsp_ebi.c"/>
+<editor factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.eclipse.cdt.ui.editor.CEditor" path="/Source/libraries/FSW/src/fsw_comm.c"/>
+<editor factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.eclipse.cdt.ui.editor.CEditor" path="/Source/libraries/Interface/src/CubeSense.1.c"/>
+<editor factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.eclipse.cdt.ui.editor.CEditor" path="/Source/libraries/Interface/inc/CubeSense.1.h"/>
+<editor factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.eclipse.cdt.ui.editor.CEditor" path="/Source/libraries/FSW/src/fsw_adcs.c"/>
+<editor factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.eclipse.cdt.ui.editor.CEditor" path="/Source/libraries/FSW/inc/fsw_adcs.h"/>
+<editor factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.eclipse.cdt.ui.editor.CEditor" path="/Source/libraries/FSW/inc/fsw_comm.h"/>
+<editor factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.eclipse.cdt.ui.editor.CEditor" path="/Source/libraries/FSW/inc/fsw_cdh.h"/>
+<editor factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.eclipse.cdt.ui.editor.CEditor" path="/Source/comms.c"/>
 </editors>
-<item historyLabel="bsp_rtc.c" index="1">
-<position info="not_deleted" x="2817" y="0"/>
+<item historyLabel="CubeSense.1.c" index="1">
+<position info="not_deleted" x="993" y="7"/>
 </item>
-<item historyLabel="bsp_rtc.c" index="1">
-<position info="not_deleted" x="2880" y="0"/>
+<item historyLabel="CubeSense.1.h" index="2">
+<position info="not_deleted" x="1202" y="28"/>
 </item>
-<item historyLabel="bsp_rtc.c" index="1">
-<position info="not_deleted" x="2912" y="0"/>
+<item historyLabel="fsw_adcs.c" index="3">
+<position info="not_deleted" x="7482" y="0"/>
 </item>
-<item historyLabel="main.c" index="0">
-<position info="not_deleted" x="2304" y="0"/>
+<item historyLabel="fsw_comm.h" index="5">
+<position info="not_deleted" x="2639" y="0"/>
 </item>
-<item historyLabel="bsp_rtc.c" index="1">
-<position info="not_deleted" x="2938" y="0"/>
+<item historyLabel="fsw_cdh.h" index="6">
+<position info="not_deleted" x="3679" y="16"/>
 </item>
-<item historyLabel="main.c" index="0">
-<position info="not_deleted" x="1913" y="0"/>
+<item historyLabel="fsw_comm.h" index="5">
+<position info="not_deleted" x="2616" y="0"/>
 </item>
-<item historyLabel="main.c" index="0">
-<position info="not_deleted" x="1910" y="0"/>
+<item historyLabel="fsw_comm.c" index="0">
+<position info="not_deleted" x="14319" y="0"/>
 </item>
-<item historyLabel="main.c" index="0">
-<position info="not_deleted" x="2304" y="0"/>
+<item historyLabel="fsw_comm.h" index="5">
+<position info="not_deleted" x="2616" y="0"/>
 </item>
-<item historyLabel="bsp_rtc.c" index="2">
-<position info="not_deleted" x="2645" y="0"/>
+<item historyLabel="fsw_adcs.c" index="3">
+<position info="not_deleted" x="7897" y="1"/>
 </item>
-<item historyLabel="bsp_rtc.c" index="2">
-<position info="not_deleted" x="2712" y="0"/>
+<item historyLabel="fsw_comm.h" index="5">
+<position info="not_deleted" x="2329" y="0"/>
 </item>
-<item historyLabel="bsp_rtc.c" index="2">
-<position info="not_deleted" x="2817" y="0"/>
+<item historyLabel="fsw_comm.c" index="0">
+<position info="not_deleted" x="14319" y="0"/>
 </item>
-<item historyLabel="bsp_rtc.c" index="2">
-<position info="not_deleted" x="2880" y="0"/>
+<item historyLabel="fsw_adcs.c" index="3">
+<position info="not_deleted" x="6460" y="3"/>
 </item>
-<item historyLabel="bsp_rtc.c" index="2">
-<position info="not_deleted" x="2912" y="0"/>
+<item historyLabel="fsw_comm.h" index="5">
+<position info="not_deleted" x="2329" y="0"/>
 </item>
-<item historyLabel="main.c" index="0">
-<position info="not_deleted" x="1913" y="0"/>
+<item historyLabel="comms.c" index="7">
+<position info="not_deleted" x="16628" y="0"/>
 </item>
-<item historyLabel="main.c" index="0">
-<position info="not_deleted" x="1957" y="0"/>
+<item historyLabel="fsw_comm.h" index="5">
+<position info="not_deleted" x="2631" y="0"/>
 </item>
-<item historyLabel="main.c" index="0">
-<position info="not_deleted" x="2304" y="0"/>
+<item historyLabel="CubeSense.1.h" index="2">
+<position info="not_deleted" x="1202" y="28"/>
 </item>
-<item historyLabel="bsp_rtc.c" index="3">
-<position/>
+<item historyLabel="fsw_comm.c" index="0">
+<position info="not_deleted" x="14319" y="0"/>
 </item>
-<item historyLabel="bsp_rtc.c" index="3">
-<position/>
+<item historyLabel="fsw_comm.h" index="5">
+<position info="not_deleted" x="2631" y="0"/>
 </item>
-<item historyLabel="bsp_rtc.c" index="3">
-<position/>
+<item historyLabel="fsw_comm.c" index="0">
+<position info="not_deleted" x="14338" y="0"/>
 </item>
-<item historyLabel="bsp_rtc.c" index="3">
-<position/>
+<item historyLabel="fsw_comm.h" index="5">
+<position info="not_deleted" x="2631" y="0"/>
 </item>
-<item historyLabel="bsp_rtc.c" index="3">
-<position/>
+<item historyLabel="fsw_comm.c" index="0">
+<position info="not_deleted" x="14356" y="0"/>
 </item>
-<item historyLabel="main.c" index="0">
-<position info="not_deleted" x="1957" y="0"/>
+<item historyLabel="fsw_adcs.c" index="3">
+<position info="not_deleted" x="6460" y="3"/>
 </item>
-<item historyLabel="main.c" index="0">
-<position info="not_deleted" x="2304" y="0"/>
+<item historyLabel="fsw_adcs.c" index="3">
+<position info="not_deleted" x="7783" y="0"/>
 </item>
-<item historyLabel="bsp_rtc.c" index="3">
-<position/>
+<item historyLabel="fsw_comm.h" index="5">
+<position info="not_deleted" x="2387" y="188"/>
 </item>
-<item historyLabel="bsp_rtc.c" index="3">
-<position/>
+<item historyLabel="CubeSense.1.c" index="1">
+<position info="not_deleted" x="993" y="7"/>
 </item>
-<item historyLabel="bsp_rtc.c" index="3">
-<position/>
+<item historyLabel="fsw_adcs.c" index="3">
+<position info="not_deleted" x="7755" y="19"/>
 </item>
-<item historyLabel="bsp_rtc.c" index="3">
-<position/>
+<item historyLabel="fsw_comm.h" index="5">
+<position info="not_deleted" x="2218" y="0"/>
 </item>
-<item historyLabel="bsp_rtc.c" index="3">
-<position/>
+<item historyLabel="fsw_comm.c" index="0">
+<position info="not_deleted" x="14356" y="0"/>
 </item>
-<item historyLabel="core_cm3.h" index="4">
-<position info="not_deleted" x="87423" y="0"/>
+<item historyLabel="fsw_comm.h" index="5">
+<position info="not_deleted" x="2218" y="0"/>
 </item>
-<item historyLabel="core_cm3.h" index="4">
-<position info="not_deleted" x="87521" y="0"/>
+<item historyLabel="fsw_comm.c" index="0">
+<position info="not_deleted" x="4822" y="0"/>
 </item>
-<item historyLabel="bsp_rtc.c" index="3">
-<position info="not_deleted" x="2960" y="0"/>
+<item historyLabel="fsw_adcs.c" index="3">
+<position info="not_deleted" x="7755" y="19"/>
 </item>
-<item historyLabel="bsp_rtc.c" index="3">
-<position info="not_deleted" x="3004" y="0"/>
+<item historyLabel="fsw_comm.h" index="5">
+<position info="not_deleted" x="2158" y="19"/>
 </item>
-<item historyLabel="main.c" index="0">
-<position info="not_deleted" x="2304" y="0"/>
+<item historyLabel="fsw_adcs.c" index="3">
+<position info="not_deleted" x="7732" y="0"/>
 </item>
-<item historyLabel="main.c" index="0">
-<position info="not_deleted" x="1957" y="0"/>
+<item historyLabel="fsw_comm.h" index="5">
+<position info="not_deleted" x="2620" y="19"/>
 </item>
-<item historyLabel="main.c" index="0">
-<position info="not_deleted" x="2340" y="0"/>
+<item historyLabel="CubeSense.1.c" index="1">
+<position info="not_deleted" x="993" y="7"/>
 </item>
-<item historyLabel="Makefile" index="5">
-<position info="not_deleted" x="2726" y="0"/>
+<item historyLabel="CubeSense.1.h" index="2">
+<position info="not_deleted" x="1202" y="28"/>
 </item>
-<item historyLabel="main.c" index="0">
-<position info="not_deleted" x="1957" y="0"/>
+<item historyLabel="fsw_adcs.h" index="4">
+<position info="not_deleted" x="1762" y="0"/>
 </item>
-<item historyLabel="main.c" index="0">
-<position info="not_deleted" x="2304" y="0"/>
+<item historyLabel="CubeSense.1.c" index="1">
+<position info="not_deleted" x="993" y="7"/>
 </item>
-<item historyLabel="main.c" index="0">
-<position info="not_deleted" x="2342" y="0"/>
+<item historyLabel="fsw_adcs.h" index="4">
+<position info="not_deleted" x="1762" y="0"/>
 </item>
-<item historyLabel="main.c" index="0">
-<position info="not_deleted" x="3151" y="0"/>
+<item historyLabel="fsw_comm.c" index="0">
+<position info="not_deleted" x="4822" y="0"/>
 </item>
-<item historyLabel="Makefile" index="5">
-<position info="not_deleted" x="2726" y="0"/>
+<item historyLabel="fsw_comm.h" index="5">
+<position info="not_deleted" x="2620" y="19"/>
 </item>
-<item historyLabel="main.c" index="0">
-<position info="not_deleted" x="1957" y="0"/>
+<item historyLabel="CubeSense.1.c" index="1">
+<position info="not_deleted" x="993" y="7"/>
 </item>
-<item historyLabel="main.c" index="0">
-<position info="not_deleted" x="2304" y="0"/>
+<item historyLabel="CubeSense.1.h" index="2">
+<position info="not_deleted" x="1202" y="28"/>
 </item>
-<item historyLabel="main.c" index="0">
-<position info="not_deleted" x="2342" y="0"/>
+<item historyLabel="fsw_comm.c" index="0">
+<position info="not_deleted" x="4822" y="0"/>
 </item>
-<item historyLabel="main.c" index="0">
-<position info="not_deleted" x="3151" y="0"/>
+<item historyLabel="CubeSense.1.c" index="1">
+<position info="not_deleted" x="993" y="7"/>
 </item>
-<item historyLabel="Makefile" index="6">
-<position info="not_deleted" x="2728" y="0"/>
+<item historyLabel="fsw_adcs.c" index="3">
+<position info="not_deleted" x="7699" y="86"/>
 </item>
-<item historyLabel="main.c" index="7">
-<position info="not_deleted" x="3151" y="0"/>
+<item historyLabel="fsw_comm.h" index="5">
+<position info="not_deleted" x="2819" y="0"/>
 </item>
-<item historyLabel="Makefile" index="6">
-<position info="not_deleted" x="3326" y="0"/>
+<item historyLabel="fsw_adcs.c" index="3">
+<position info="not_deleted" x="7699" y="86"/>
 </item>
-<item historyLabel="main.c" index="7">
-<position info="not_deleted" x="3151" y="0"/>
+<item historyLabel="fsw_comm.h" index="5">
+<position info="not_deleted" x="2725" y="128"/>
 </item>
-<item active="true" historyLabel="bsp_ebi.c" index="8">
-<position info="not_deleted" x="2979" y="10"/>
+<item active="true" historyLabel="fsw_comm.c" index="0">
+<position info="not_deleted" x="4822" y="0"/>
 </item>
 </navigationHistory>
 <input factoryID="org.eclipse.ui.internal.model.ResourceFactory" path="/" type="8"/>
@@ -593,41 +575,50 @@
 </trimLayout>
 </window>
 <mruList>
-<file factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.eclipse.ui.systemExternalEditor" name="efm32ggRelease.ld" tooltip="Source/libraries/Device/EnergyMicro/EFM32GG/Source/G++/efm32ggRelease.ld">
-<persistable path="/Source/libraries/Device/EnergyMicro/EFM32GG/Source/G++/efm32ggRelease.ld"/>
+<file factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.eclipse.cdt.ui.editor.CEditor" name="fsw_cdh.h" tooltip="Source/libraries/FSW/inc/fsw_cdh.h">
+<persistable path="/Source/libraries/FSW/inc/fsw_cdh.h"/>
 </file>
-<file factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.eclipse.ui.systemExternalEditor" name="efm32ggDebug.ld" tooltip="Source/libraries/Device/EnergyMicro/EFM32GG/Source/G++/efm32ggDebug.ld">
-<persistable path="/Source/libraries/Device/EnergyMicro/EFM32GG/Source/G++/efm32ggDebug.ld"/>
+<file factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.eclipse.cdt.ui.editor.CEditor" name="fsw_comm.h" tooltip="Source/libraries/FSW/inc/fsw_comm.h">
+<persistable path="/Source/libraries/FSW/inc/fsw_comm.h"/>
 </file>
-<file factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.eclipse.ui.systemExternalEditor" name="efm32gg.ld" tooltip="Source/libraries/Device/EnergyMicro/EFM32GG/Source/G++/efm32gg.ld">
-<persistable path="/Source/libraries/Device/EnergyMicro/EFM32GG/Source/G++/efm32gg.ld"/>
+<file factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.eclipse.cdt.ui.editor.CEditor" name="fsw_comm.c" tooltip="Source/libraries/FSW/src/fsw_comm.c">
+<persistable path="/Source/libraries/FSW/src/fsw_comm.c"/>
 </file>
-<file factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.eclipse.cdt.ui.editor.CEditor" name="bsp_rtc.c" tooltip="Source/libraries/bspLib/src/bsp_rtc.c">
-<persistable path="/Source/libraries/bspLib/src/bsp_rtc.c"/>
+<file factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.eclipse.cdt.ui.editor.CEditor" name="fsw_adcs.h" tooltip="Source/libraries/FSW/inc/fsw_adcs.h">
+<persistable path="/Source/libraries/FSW/inc/fsw_adcs.h"/>
 </file>
-<file factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.eclipse.cdt.ui.editor.CEditor" name="em_device.h" tooltip="Source/libraries/Device/EnergyMicro/EFM32WG/Include/em_device.h">
-<persistable path="/Source/libraries/Device/EnergyMicro/EFM32WG/Include/em_device.h"/>
+<file factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.eclipse.cdt.ui.editor.CEditor" name="CubeSense.1.h" tooltip="Source/libraries/Interface/inc/CubeSense.1.h">
+<persistable path="/Source/libraries/Interface/inc/CubeSense.1.h"/>
 </file>
-<file factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.eclipse.cdt.ui.editor.CEditor" name="em_gpio.h" tooltip="Source/libraries/emlib/inc/em_gpio.h">
-<persistable path="/Source/libraries/emlib/inc/em_gpio.h"/>
+<file factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.eclipse.cdt.ui.editor.CEditor" name="CubeSense.1.c" tooltip="Source/libraries/Interface/src/CubeSense.1.c">
+<persistable path="/Source/libraries/Interface/src/CubeSense.1.c"/>
 </file>
-<file factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.eclipse.cdt.ui.editor.CEditor" name="bsp_acmp.h" tooltip="Source/libraries/bspLib/inc/bsp_acmp.h">
-<persistable path="/Source/libraries/bspLib/inc/bsp_acmp.h"/>
+<file factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.eclipse.ui.DefaultTextEditor" name="CubeSense.1" tooltip="Source/libraries/Interface/src/CubeSense.1">
+<persistable path="/Source/libraries/Interface/src/CubeSense.1"/>
 </file>
-<file factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.eclipse.cdt.ui.editor.CEditor" name="bsp_ebi.c" tooltip="Source/libraries/bspLib/src/bsp_ebi.c">
-<persistable path="/Source/libraries/bspLib/src/bsp_ebi.c"/>
+<file factoryID="org.eclipse.ui.ide.FileStoreEditorInputFactory" id="org.eclipse.cdt.ui.editor.CEditor" name="CubeSense.1.h" tooltip="C:\Users\15731979\Desktop\QB50\CubeSense\CubeSense Interface Library\CubeSense.1.h">
+<persistable uri="file:/C:/Users/15731979/Desktop/QB50/CubeSense/CubeSense%20Interface%20Library/CubeSense.1.h"/>
+</file>
+<file factoryID="org.eclipse.ui.ide.FileStoreEditorInputFactory" id="org.eclipse.cdt.ui.editor.CEditor" name="CubeSense.1.c" tooltip="C:\Users\15731979\Desktop\QB50\CubeSense\CubeSense Interface Library\CubeSense.1.c">
+<persistable uri="file:/C:/Users/15731979/Desktop/QB50/CubeSense/CubeSense%20Interface%20Library/CubeSense.1.c"/>
+</file>
+<file factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.eclipse.cdt.ui.editor.CEditor" name="fsw_adcs.c" tooltip="Source/libraries/FSW/src/fsw_adcs.c">
+<persistable path="/Source/libraries/FSW/src/fsw_adcs.c"/>
+</file>
+<file factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.eclipse.cdt.ui.editor.CEditor" name="microsd.c" tooltip="Source/libraries/fatfs/src/microsd.c">
+<persistable path="/Source/libraries/fatfs/src/microsd.c"/>
+</file>
+<file factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.eclipse.cdt.ui.editor.CEditor" name="fsw_filesystem.h" tooltip="Source/libraries/FSW/inc/fsw_filesystem.h">
+<persistable path="/Source/libraries/FSW/inc/fsw_filesystem.h"/>
+</file>
+<file factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.eclipse.cdt.ui.editor.CEditor" name="fsw_cdh.c" tooltip="Source/libraries/FSW/src/fsw_cdh.c">
+<persistable path="/Source/libraries/FSW/src/fsw_cdh.c"/>
+</file>
+<file factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.eclipse.cdt.ui.editor.CEditor" name="fsw_filesystem.c" tooltip="Source/libraries/FSW/src/fsw_filesystem.c">
+<persistable path="/Source/libraries/FSW/src/fsw_filesystem.c"/>
 </file>
 <file factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.eclipse.cdt.ui.editor.CEditor" name="main.c" tooltip="Source/main.c">
 <persistable path="/Source/main.c"/>
-</file>
-<file factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.eclipse.ui.DefaultTextEditor" name="efm32ggBoot.ld" tooltip="Source/libraries/Device/EnergyMicro/EFM32GG/Source/G++/efm32ggBoot.ld">
-<persistable path="/Source/libraries/Device/EnergyMicro/EFM32GG/Source/G++/efm32ggBoot.ld"/>
-</file>
-<file factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.eclipse.cdt.ui.editor.CEditor" name="tasks.c" tooltip="Source/libraries/FreeRTOS/Source/tasks.c">
-<persistable path="/Source/libraries/FreeRTOS/Source/tasks.c"/>
-</file>
-<file factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.eclipse.cdt.ui.editor.CEditor" name="fsw_healthandhousekeeping.c" tooltip="Source/libraries/FSW/src/fsw_healthandhousekeeping.c">
-<persistable path="/Source/libraries/FSW/src/fsw_healthandhousekeeping.c"/>
 </file>
 </mruList>
 </workbench>

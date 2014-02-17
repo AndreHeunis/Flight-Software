@@ -66,7 +66,7 @@ CFLAGS += -D$(DEVICE) -D$(BOARD) -mcpu=cortex-m3 -mthumb -ffunction-sections -fd
 ASMFLAGS += -x assembler-with-cpp
 
 LDFLAGS += -Xlinker -Map=$(LST_DIR)/$(PROJECTNAME).map -mcpu=cortex-m3 -mthumb \
--T../../libraries/Device/EnergyMicro/EFM32GG/Source/G++/efm32ggRelease.ld \
+-T../../libraries/Device/EnergyMicro/EFM32GG/Source/G++/efm32gg.ld \
 -L"$(TOOLDIR)/arm-none-eabi/lib/thumb2" \
 -L"$(TOOLDIR)/lib/gcc/arm-none-eabi/$(GCCVERSION)/thumb2" \
 -Wl,--gc-sections
@@ -86,7 +86,8 @@ INCLUDEPATHS += \
 -I../../libraries/fatfs/inc \
 -I../../libraries/FreeRTOS/Source/include \
 -I../../libraries/FreeRTOS/Source/portable/GCC/ARM_CM3 \
--I../../libraries/FSW/inc
+-I../../libraries/FSW/inc \
+-I../../libraries/Interface/inc
 
 ####################################################################
 # Files                                                            #
@@ -134,6 +135,7 @@ C_SRC +=  \
 ../../libraries/FSW/src/fsw_power.c \
 ../../libraries/FSW/src/fsw_modes.c \
 ../../libraries/FSW/src/z_HILcomm.c \
+../../libraries/Interface/src/CubeSense.1.c \
 ../background.c \
 ../comms.c \
 ../tests.c \
